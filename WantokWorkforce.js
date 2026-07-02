@@ -11,7 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
-  RefreshControl,
+  RefreshControl, Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import categories from "./categories.json";
@@ -235,8 +235,44 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
   }, [searchText, selectedCategory]);
 
   if (currentUser === "provider") {
-    const [vStatus, setVStatus] = useState({ verified: false, vouch_status: 'none' });
-    const fetchVerification = async () => {
+      const [vStatus, setVStatus] = useState({ verified: false, vouch_status: 'none' });
+  const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    primary_skill: user?.primary_skill || '',
+    skills_specialization: '',
+    years_experience: '',
+    hourly_rate: user?.hourly_rate?.toString() || '',
+    operating_location: user?.location_name || ''
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+      const handleUpdateProfile = async () => {
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`${API_BASE}/v1/providers/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(profileForm)
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert("Profile updated successfully!");
+        setIsUpdateModalVisible(false);
+        onUpdateUser({ ...user, primary_skill: profileForm.primary_skill, hourly_rate: profileForm.hourly_rate });
+      } else {
+        alert(data.error || "Failed to update profile");
+      }
+    } catch (error) {
+      alert("Network error updating profile");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const fetchVerification = async () => {
       try {
         const res = await fetch(`${API_BASE}/v1/providers/verification-status`, {
           headers: { 'Authorization': `Bearer ${user?.token}` }
@@ -323,7 +359,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
                 <View style={{ backgroundColor: "#1E293B", borderRadius: 20, padding: 20 }}>
                   <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 12 }}>Quick Actions</Text>
-                  <TouchableOpacity style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10, marginBottom: 10 }}>
+                  <TouchableOpacity onPress={() => setIsUpdateModalVisible(true)} style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10, marginBottom: 10 }}>
                     <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Update Trade Skills</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10 }}>
@@ -335,6 +371,92 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
           </View>
         </ScrollView>
+        {/* Provider Profile Update Modal */}
+        <Modal visible={isUpdateModalVisible} animationType="slide" transparent={true}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 24, width: '100%', maxWidth: 500, padding: 24, maxHeight: '90%' }}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 4 }}>Update Trade Profile</Text>
+                <Text style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 20 }}>Refine your skills for better job matching</Text>
+
+                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>PRIMARY TRADE CATEGORY</Text>
+                <View style={{ backgroundColor: '#F3F4F6', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12 }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 10 }}>
+                    {categories.map((cat) => (
+                      <TouchableOpacity
+                        key={cat.label}
+                        onPress={() => setProfileForm({...profileForm, primary_skill: cat.label})}
+                        style={{
+                          paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 8,
+                          backgroundColor: profileForm.primary_skill === cat.label ? COLORS.primary : '#fff',
+                          borderWidth: 1, borderColor: COLORS.border
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: profileForm.primary_skill === cat.label ? '#fff' : COLORS.text }}>{cat.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>SKILLS & SPECIALIZATIONS</Text>
+                <TextInput
+                  placeholder="e.g. Commercial wiring, Pipe repair"
+                  value={profileForm.skills_specialization}
+                  onChangeText={(t) => setProfileForm({...profileForm, skills_specialization: t})}
+                  style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 14 }}
+                />
+
+                <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>YEARS EXP.</Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      placeholder="5"
+                      value={profileForm.years_experience}
+                      onChangeText={(t) => setProfileForm({...profileForm, years_experience: t})}
+                      style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>HOURLY RATE (K)</Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      placeholder="50.00"
+                      value={profileForm.hourly_rate}
+                      onChangeText={(t) => setProfileForm({...profileForm, hourly_rate: t})}
+                      style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
+                    />
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>OPERATING PROVINCE</Text>
+                <TextInput
+                  placeholder="e.g. National Capital District"
+                  value={profileForm.operating_location}
+                  onChangeText={(t) => setProfileForm({...profileForm, operating_location: t})}
+                  style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, marginBottom: 24, fontSize: 14 }}
+                />
+
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => setIsUpdateModalVisible(false)}
+                    style={{ flex: 1, padding: 16, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center' }}
+                  >
+                    <Text style={{ fontWeight: '700', color: COLORS.text }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleUpdateProfile}
+                    disabled={isUpdating}
+                    style={{ flex: 2, padding: 16, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center' }}
+                  >
+                    <Text style={{ fontWeight: '700', color: '#fff' }}>{isUpdating ? 'Saving...' : 'Update Skills'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
       </View>
     );
   }
