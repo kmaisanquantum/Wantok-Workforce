@@ -1,17 +1,23 @@
 const UserModel = require('../../auth/models/user_model');
 
 class ProviderController {
-  static async updateProfile(req, res) {
+    static async updateProfile(req, res) {
     try {
       const provider_id = req.user.id;
       const { primary_skill, skills_specialization, years_experience, hourly_rate, operating_location } = req.body;
 
-      const pool = UserModel.getPool();
+      if (!primary_skill) {
+        return res.status(400).json({ success: false, error: 'Primary skill is required' });
+      }
 
-      // Update basic user info
+      const pool = UserModel.getPool();
+      const parsedYears = parseInt(years_experience) || 0;
+      const parsedRate = parseFloat(hourly_rate) || 0;
+
+      // Update basic user info (primary skill, rate, and sync location_name)
       await pool.query(
-        'UPDATE users SET primary_skill = $1, hourly_rate = $2 WHERE id = $3',
-        [primary_skill, hourly_rate, provider_id]
+        'UPDATE users SET primary_skill = $1, hourly_rate = $2, location_name = $3 WHERE id = $4',
+        [primary_skill, parsedRate, operating_location, provider_id]
       );
 
       // Update provider profile info
@@ -22,7 +28,7 @@ class ProviderController {
         'skills_specialization = EXCLUDED.skills_specialization, ' +
         'years_experience = EXCLUDED.years_experience, ' +
         'operating_location = EXCLUDED.operating_location',
-        [provider_id, skills_specialization, years_experience, operating_location]
+        [provider_id, skills_specialization, parsedYears, operating_location]
       );
 
       return res.status(200).json({ success: true, message: 'Profile updated successfully' });
@@ -31,6 +37,7 @@ class ProviderController {
       return res.status(500).json({ success: false, error: 'Failed to update provider profile' });
     }
   }
+
 
   static async submitVouch(req, res) {
     try {
