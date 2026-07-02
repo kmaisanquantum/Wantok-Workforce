@@ -1,6 +1,37 @@
 const UserModel = require('../../auth/models/user_model');
 
 class ProviderController {
+  static async updateProfile(req, res) {
+    try {
+      const provider_id = req.user.id;
+      const { primary_skill, skills_specialization, years_experience, hourly_rate, operating_location } = req.body;
+
+      const pool = UserModel.getPool();
+
+      // Update basic user info
+      await pool.query(
+        'UPDATE users SET primary_skill = $1, hourly_rate = $2 WHERE id = $3',
+        [primary_skill, hourly_rate, provider_id]
+      );
+
+      // Update provider profile info
+      await pool.query(
+        'INSERT INTO provider_profiles (user_id, skills_specialization, years_experience, operating_location) ' +
+        'VALUES ($1, $2, $3, $4) ' +
+        'ON CONFLICT (user_id) DO UPDATE SET ' +
+        'skills_specialization = EXCLUDED.skills_specialization, ' +
+        'years_experience = EXCLUDED.years_experience, ' +
+        'operating_location = EXCLUDED.operating_location',
+        [provider_id, skills_specialization, years_experience, operating_location]
+      );
+
+      return res.status(200).json({ success: true, message: 'Profile updated successfully' });
+    } catch (error) {
+      console.error('❌ Update Profile Error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to update provider profile' });
+    }
+  }
+
   static async submitVouch(req, res) {
     try {
       const { gatekeeper_name, gatekeeper_role, gatekeeper_contact } = req.body;
