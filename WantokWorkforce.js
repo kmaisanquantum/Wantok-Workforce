@@ -173,7 +173,7 @@ function ProviderFinancialDashboard({ user }) {
                   <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.text }}>{job.service_type}</Text>
                   <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>Client: {job.customer_name}</Text>
                 </View>
-                <View style={{ alignItems: 'right' }}>
+                <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ fontSize: 20, fontWeight: "900", color: COLORS.primary }}>K{Number(job.price).toFixed(2)}</Text>
                   <Text style={{ fontSize: 10, color: COLORS.textLight, textAlign: 'right' }}>{new Date(job.completed_at || Date.now()).toLocaleDateString()}</Text>
                 </View>
