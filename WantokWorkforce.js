@@ -490,17 +490,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{isSearching ? "SEARCHING NEARBY..." : "FIND NEARBY PROVIDERS"}</Text>
           </TouchableOpacity>
 
-          <View style={{ paddingVertical: 20 }}>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Categories</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
-              {categories.map((cat, i) => (
-                <TouchableOpacity key={i} onPress={() => { setSelectedCategory(cat.label); setSearchText(""); }} style={{ width: isDesktop ? (MAX_WIDTH - 80) / 6 - 10 : (width - 32) / 4 - 10, margin: 5, backgroundColor: selectedCategory === cat.label ? cat.color + "22" : "#fff", borderRadius: 14, paddingVertical: 12, alignItems: "center", gap: 6, elevation: 2, borderWidth: selectedCategory === cat.label ? 1 : 0, borderColor: cat.color }}>
-                  <View style={{ width: 40, height: 40, justifyContent: "center", alignItems: "center" }}><Text style={{ fontSize: 22 }}>{cat.icon}</Text></View>
-                  <Text numberOfLines={1} style={{ fontSize: 10, fontWeight: "700", color: selectedCategory === cat.label ? cat.color : COLORS.textMuted }}>{cat.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
           {nearbyWorkers.length > 0 && (
             <View style={{ paddingVertical: 20 }}>
               <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
