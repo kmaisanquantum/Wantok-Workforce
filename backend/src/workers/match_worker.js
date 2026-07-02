@@ -44,8 +44,8 @@ class MatchWorker {
       // Find unmatched pending jobs
       const query = `
         SELECT b.id, b.service_type, b.customer_id,
-               ST_X(u.location_coords::geometry) as lon,
-               ST_Y(u.location_coords::geometry) as lat
+               CASE WHEN u.location_coords IS NOT NULL THEN ST_X(u.location_coords::geometry) ELSE NULL END as lon,
+               CASE WHEN u.location_coords IS NOT NULL THEN ST_Y(u.location_coords::geometry) ELSE NULL END as lat
         FROM bookings b
         JOIN users u ON b.customer_id = u.id
         WHERE b.status = 'pending'
@@ -79,14 +79,14 @@ class MatchWorker {
       // PostGIS query to find available providers with matching skill
       const candidateQuery = `
         SELECT u.id,
-               ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 as distance_km
+               CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
         WHERE ur.role_name = 'provider'
           AND u.is_available = TRUE
           AND u.is_flagged = FALSE
           AND u.primary_skill = $3
-          AND ST_DWithin(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326), $4 * 1000)
+          AND ($1::FLOAT IS NULL OR $2::FLOAT IS NULL OR (u.location_coords IS NOT NULL AND ST_DWithin(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326), $4 * 1000)))
         ORDER BY distance_km ASC
         LIMIT 5
       `;
