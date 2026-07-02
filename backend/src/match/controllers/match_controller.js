@@ -8,30 +8,38 @@ class MatchController {
     try {
       const { latitude, longitude, trade_category, radius } = req.query;
 
-      if (!latitude || !longitude) {
-        return res.status(400).json({ error: 'Latitude and longitude are required' });
-      }
-
-      const lat = parseFloat(latitude);
-      const lon = parseFloat(longitude);
+      // Handle "undefined" strings from frontend and parse coordinates
+      let lat = (latitude && latitude !== 'undefined') ? parseFloat(latitude) : null;
+      let lon = (longitude && longitude !== 'undefined') ? parseFloat(longitude) : null;
 
       // Load radius from database settings if not provided
       let searchRadius;
       if (radius) {
         searchRadius = parseFloat(radius);
       } else {
-        searchRadius = await AdminController.getInternalSetting('match_radius', 50);
-        searchRadius = parseFloat(searchRadius);
+        try {
+          searchRadius = await AdminController.getInternalSetting('match_radius', 50);
+          searchRadius = parseFloat(searchRadius);
+        } catch (e) {
+          searchRadius = 50;
+        }
       }
 
-      if (isNaN(lat) || lon > 180 || lon < -180 || lat > 90 || lat < -90) {
-        return res.status(400).json({ error: 'Invalid coordinate values' });
+      // Validate coordinates if both are provided
+      if (lat !== null && lon !== null) {
+        if (isNaN(lat) || isNaN(lon) || lon > 180 || lon < -180 || lat > 90 || lat < -90) {
+          return res.status(400).json({ error: 'Invalid coordinate values' });
+        }
+      } else {
+        // If one is missing, treat both as null for global fallback
+        lat = null;
+        lon = null;
       }
 
-      console.log(`🔍 [Match] Searching for '${trade_category || 'Any'}' near [${lat}, ${lon}] within ${searchRadius}km`);
+      console.log(`🔍 [Match] Searching for '${trade_category || 'Any'}' ${lat ? `near [${lat}, ${lon}] within ${searchRadius}km` : '(global/text search)'}`);
 
-      // Publish Job Alert to Redis Pub/Sub for worker matchmaking
-      if (redisClient) {
+      // Publish Job Alert to Redis Pub/Sub for worker matchmaking (only if location is available)
+      if (redisClient && lat !== null && lon !== null) {
         const jobPayload = {
           lat,
           lon,

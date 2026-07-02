@@ -99,7 +99,7 @@ class UserModel {
   }
 
   static async updateAvailability(userId, isAvailable) {
-    const query = `UPDATE users SET is_available = $2 WHERE id = $1 RETURNING id, is_available, ST_X(location_coords::geometry) as longitude, ST_Y(location_coords::geometry) as latitude`;
+    const query = `UPDATE users SET is_available = $2 WHERE id = $1 RETURNING id, is_available, CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude, CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude`;
     const { rows } = await pool.query(query, [userId, isAvailable]);
     return rows[0];
   }

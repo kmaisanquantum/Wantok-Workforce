@@ -4,40 +4,40 @@ const redisClient = require('../../../db/redis_init');
 class MatchService {
   /**
    * Find workers near a specific location using Redis Geospatial index with SQL fallback.
-   * @param {number} lat - Latitude
-   * @param {number} lon - Longitude
+   * If coordinates are missing, performs a global text-based search.
+   * @param {number|null} lat - Latitude
+   * @param {number|null} lon - Longitude
    * @param {string} trade - Trade Category
    * @param {number} [radiusKm=15] - Search radius in kilometers
    */
   static async findNearbyWorkers(lat, lon, trade, radiusKm = 15) {
     const pool = UserModel.getPool();
+    const hasLocation = lat !== null && lon !== null;
 
-    // 1. Try Redis Geospatial Search first
-    if (redisClient) {
+    // 1. Try Redis Geospatial Search first (only if location is available)
+    if (redisClient && hasLocation) {
       try {
         console.log(`📡 Redis: Searching active providers within ${radiusKm}km of [${lat}, ${lon}]`);
 
-        // Use GEORADIUS as it's more widely supported in older Redis versions/libraries
-        // and provides member IDs directly.
         const nearbyIds = await redisClient.georadius('active_providers', lon, lat, radiusKm, 'km', 'WITHDIST');
 
         if (nearbyIds && nearbyIds.length > 0) {
           console.log(`✅ Redis: Found ${nearbyIds.length} nearby providers in cache`);
 
-          // nearbyIds is array of [member, distance]
           const ids = nearbyIds.map(item => item[0]);
 
-          // Fetch full profile details for these specific IDs
           const query = `
             SELECT
               id, name, primary_skill, location_name, is_verified,
-              ST_X(location_coords::geometry) as longitude,
-              ST_Y(location_coords::geometry) as latitude,
-              ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0 as distance_km
+              CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
+              CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
+              CASE WHEN location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL
+                   THEN ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
+                   ELSE NULL END as distance_km
             FROM users
             WHERE id = ANY($3)
             AND ($4::TEXT IS NULL OR primary_skill ILIKE '%' || $4 || '%')
-            ORDER BY distance_km ASC;
+            ORDER BY distance_km ASC NULLS LAST;
           `;
 
           const { rows } = await pool.query(query, [lon, lat, ids, trade]);
@@ -48,32 +48,38 @@ class MatchService {
       }
     }
 
-    // 2. Fallback to PostGIS SQL scan if Redis is empty or errors
-    console.log('🔄 Fallback: Executing PostGIS spatial scan...');
+    // 2. Fallback to PostGIS SQL scan
+    console.log(`🔄 ${hasLocation ? 'Fallback' : 'Global'}: Executing ${hasLocation ? 'PostGIS spatial' : 'text-based'} scan...`);
+
     const fallbackQuery = `
       SELECT
         id, name, primary_skill, location_name, is_verified,
-        ST_X(location_coords::geometry) as longitude,
-        ST_Y(location_coords::geometry) as latitude,
-        ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0 as distance_km
+        CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
+        CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
+        CASE WHEN location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL
+             THEN ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
+             ELSE NULL END as distance_km
       FROM users
       WHERE
         active_persona = 'provider'
         AND is_available = true
         AND ($3::TEXT IS NULL OR primary_skill ILIKE '%' || $3 || '%')
-        AND ST_DWithin(
-          location_coords,
-          ST_MakePoint($1, $2)::geography,
-          $4 * 1000
+        AND (
+          $4::FLOAT IS NULL OR
+          (location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $4 * 1000))
         )
-      ORDER BY distance_km ASC;
+      ORDER BY
+        CASE WHEN $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN distance_km END ASC NULLS LAST,
+        id DESC;
     `;
 
     try {
-      const { rows } = await pool.query(fallbackQuery, [lon, lat, trade, radiusKm]);
+      // Use null for radius if location is missing to trigger the "global" logic in SQL
+      const searchRadius = hasLocation ? radiusKm : null;
+      const { rows } = await pool.query(fallbackQuery, [lon, lat, trade, searchRadius]);
       return rows;
     } catch (error) {
-      console.error('❌ PostGIS Fallback Error:', error.message);
+      console.error('❌ PostGIS Scan Error:', error.message);
       throw error;
     }
   }
