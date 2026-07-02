@@ -2,10 +2,31 @@ const MatchService = require('../services/match_service');
 const UserModel = require('../../auth/models/user_model');
 const AdminController = require('../../admin/controllers/admin_controller');
 const redisClient = require('../../../db/redis_init');
+const SYNONYM_DICTIONARY = {
+  'Legal': ['lawyer', 'lawyers', 'solicitor', 'barrister', 'advocate', 'attorney'],
+  'Medical': ['doctor', 'nurse', 'hcs', 'clinic', 'physio', 'health', 'triage'],
+  'Electric': ['electrician', 'sparky', 'wiring', 'power', 'fuse', 'electrical'],
+  'Plumbing': ['plumber', 'pipe', 'leak', 'drain', 'water', 'toilet'],
+  'Carpentry': ['carpenter', 'builder', 'wood', 'roof', 'furniture', 'cabinet'],
+  'Finance': ['accountant', 'tax', 'bookkeeper', 'loans', 'kingsmen', 'banking']
+};
+
+const normalizeSearchTrade = (query) => {
+  if (!query) return { original: null, mapped: null };
+  const lowerQuery = query.toLowerCase().trim();
+  for (const [category, synonyms] of Object.entries(SYNONYM_DICTIONARY)) {
+    if (synonyms.some(s => lowerQuery.includes(s)) || category.toLowerCase() === lowerQuery) {
+      return { original: lowerQuery, mapped: category };
+    }
+  }
+  return { original: lowerQuery, mapped: null };
+};
+
 
 class MatchController {
   static async getNearbyWorkers(req, res) {
     const { latitude, longitude, trade_category, radius } = req.query;
+    const { original: queryText, mapped: categoryTag } = normalizeSearchTrade(trade_category);
 
     // Handle "undefined" strings from frontend and parse coordinates
     const lat = (latitude && latitude !== 'undefined') ? parseFloat(latitude) : null;
@@ -16,10 +37,10 @@ class MatchController {
       // 1. If coordinates are missing or invalid, go straight to text search fallback
       if (!hasCoordinates) {
         console.log(`ℹ️ [MatchController] Missing coordinates. Falling back to global text search for: "${trade_category || 'Any'}"`);
-        const workers = await MatchService.textSearchWorkers(trade_category);
+        const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, search_type: 'global_text' },
+          search_params: { trade_category, queryText, categoryTag, search_type: 'global_text' },
           workers
         });
       }
@@ -27,10 +48,10 @@ class MatchController {
       // 2. Validate coordinate ranges for spatial query
       if (lon > 180 || lon < -180 || lat > 90 || lat < -90) {
         console.warn(`⚠️ [MatchController] Coordinates out of bounds: [${lat}, ${lon}]. Using text search fallback.`);
-        const workers = await MatchService.textSearchWorkers(trade_category);
+        const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, search_type: 'fallback_text_invalid_coords' },
+          search_params: { trade_category, queryText, categoryTag, search_type: 'fallback_text_invalid_coords' },
           workers
         });
       }
@@ -48,26 +69,26 @@ class MatchController {
 
       // Publish Job Alert (only for valid spatial searches)
       if (redisClient) {
-        const jobPayload = { lat, lon, trade_category, radius: searchRadius, timestamp: new Date().toISOString() };
+        const jobPayload = { lat, lon, trade_category, queryText, categoryTag, radius: searchRadius, timestamp: new Date().toISOString() };
         redisClient.publish('job_alerts', JSON.stringify(jobPayload));
       }
 
       // 3. Inner try-catch for spatial query protection
       try {
-        const workers = await MatchService.findNearbyWorkers(lat, lon, trade_category, searchRadius);
+        const workers = await MatchService.findNearbyWorkers(lat, lon, queryText, categoryTag, searchRadius);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { lat, lon, trade_category, radius: searchRadius, search_type: 'spatial' },
+          search_params: { lat, lon, trade_category, queryText, categoryTag, radius: searchRadius, search_type: 'spatial' },
           workers
         });
       } catch (spatialError) {
         console.error('❌ [MatchController] Spatial Database Error. Intercepting and falling back to text search:', spatialError.message);
 
         // Final fallback to text search if spatial query fails (e.g., PostGIS math error)
-        const workers = await MatchService.textSearchWorkers(trade_category);
+        const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, search_type: 'fallback_text_on_spatial_error' },
+          search_params: { trade_category, queryText, categoryTag, search_type: 'fallback_text_on_spatial_error' },
           workers
         });
       }
