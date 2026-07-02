@@ -41,7 +41,6 @@ const COLORS = {
   statusBar: "#0F4024",
 };
 
-
 const StarRating = ({ rating }) => {
   const stars = Math.round(rating);
   return (
@@ -308,7 +307,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
           </LinearGradient>
 
-
             <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
               {/* Left Column: Work Status & Financial Ledger */}
               <View style={{ flex: isDesktop ? 2 : 1, gap: 16 }}>
@@ -479,17 +477,10 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             <View style={{ backgroundColor: "#fff", borderRadius: 14, paddingVertical: 8, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10, elevation: 4 }}>
               <Text style={{ fontSize: 18 }}>🔍</Text>
               <TextInput value={searchText} onChangeText={setSearchText} placeholder="Search trade or category..." placeholderTextColor={COLORS.textLight} style={{ flex: 1, fontSize: 14, color: COLORS.text, paddingLeft: 8, paddingVertical: 0 }} />
-              <View style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 }}><Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>📍 PNG</Text></View>
+              <TouchableOpacity onPress={fetchNearbyProviders} disabled={isSearching} style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 }}><Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>📍 SEARCH</Text></TouchableOpacity>
             </View>
 
         </LinearGradient>
-
-
-          <TouchableOpacity onPress={fetchNearbyProviders} disabled={isSearching} style={{ marginTop: 12, alignSelf: "center", paddingVertical: 8 }}>
-            <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 14, textDecorationLine: "underline" }}>
-              {isSearching ? "Searching..." : "[Tap here to view search results]"}
-            </Text>
-          </TouchableOpacity>
 
           {nearbyWorkers.length > 0 && (
             <View style={{ paddingVertical: 20 }}>
@@ -592,7 +583,6 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
 }
 
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
-
 
 function TrustScreen({ onNavigate }) {
   const [workers] = useState(
@@ -842,7 +832,6 @@ function BookingsScreen({ onNavigate, user, currentUser }) {
   );
 }
 
-
 function RoleSelectionScreen({ onSelectRole }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 20, justifyContent: "center" }}>
@@ -1017,8 +1006,6 @@ function ProviderOnboardingScreen({ onComplete, user }) {
     </View>
   );
 }
-
-
 
 function AuthScreen({ onAuth }) {
   const [loading, setLoading] = useState(false);
@@ -1383,9 +1370,6 @@ function AuthScreen({ onAuth }) {
     </View>
   );
 }
-
-
-
 
 function AdminAuthScreen({ onAuth }) {
   const [loading, setLoading] = useState(false);
@@ -1767,7 +1751,6 @@ function AdminScreen({ onNavigate, onLogout, user }) {
       alert("❌ Sync Error: " + e.message);
     } finally { setLoading(false); }
   };
-
 
   const fetchQueue = async () => {
     try {
