@@ -201,7 +201,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [filtered, setFiltered] = useState([]);
   const [nearbyWorkers, setNearbyWorkers] = useState([]);
-  const [isSearching, setIsSearching] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
   const fetchNearbyProviders = async () => {
     setIsSearching(true);
@@ -209,9 +209,9 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
     const lon = 147.1803;
 
     try {
-      const url = `${API_BASE}/match/nearby?latitude=${lat}&longitude=${lon}${selectedCategory ? '&trade_category=' + selectedCategory : ''}`;
+      const url = `${API_BASE}/match/nearby?latitude=${lat}&longitude=${lon}${(selectedCategory || searchText) ? '&trade_category=' + encodeURIComponent(selectedCategory || searchText) : ''}`;
       const response = await fetch(url);
-      data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
+      const data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
 
       if (response.ok) {
         setNearbyWorkers(data.workers);
@@ -379,6 +379,16 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
               ))}
             </View>
           </View>
+          {nearbyWorkers.length > 0 && (
+            <View style={{ paddingVertical: 20 }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
+              <View style={{ gap: 12 }}>
+                {nearbyWorkers.map((worker) => (
+                  <WorkerCard key={worker.id} worker={worker} onPress={() => onNavigate("workerDetail", worker)} />
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

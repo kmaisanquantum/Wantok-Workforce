@@ -1,25 +1,16 @@
-🔍 [DB] Initializing pool from DATABASE_URL
-🔌 [DB] Internal/Local network detected (localhost). Disabling SSL for clean handshake.
-⚠️ REDIS_URL not provided. Redis caching disabled.
-Wantok Unified Server running on port 3000
-🔄 [DB Handshake] Attempting direct connection to localhost/wantok...
-⚠️ [Non-Critical] Database connection failed during initialization.
-Target Host: localhost
-Target Database: wantok
-Error Message:
-Error Code: ECONNREFUSED
-🚀 Continuing server startup anyway. Database-dependent features will be unavailable until connection is restored.
-✅ Backend is ready and database is synced.
-📡 [2026-07-01T04:38:51.166Z] HEAD / - Origin: Same-Origin
-📡 [2026-07-01T04:41:41.485Z] GET / - Origin: Same-Origin
-📡 [2026-07-01T04:41:41.575Z] GET /_expo/static/js/web/AppEntry-72d95fd34412d46b480ee8f80dfd2297.js - Origin: Same-Origin
-📡 [2026-07-01T04:41:42.040Z] GET /api/health - Origin: Same-Origin
-📡 [2026-07-01T04:41:42.076Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
-📡 [2026-07-01T04:41:42.077Z] GET /api/health/db - Origin: Same-Origin
-❌ [DB] checkConnection Error:
-📡 [2026-07-01T04:41:47.118Z] GET /@dm1n - Origin: Same-Origin
-📡 [2026-07-01T04:41:47.137Z] GET /_expo/static/js/web/AppEntry-72d95fd34412d46b480ee8f80dfd2297.js - Origin: Same-Origin
-📡 [2026-07-01T04:41:47.196Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
-📡 [2026-07-01T04:41:47.197Z] GET /api/health - Origin: Same-Origin
-📡 [2026-07-01T04:41:47.255Z] GET /api/health/db - Origin: Same-Origin
-❌ [DB] checkConnection Error:
+CRITICAL: Uncaught Exception: Cannot find module 'express'
+Require stack:
+- /app/backend/server.js
+Error: Cannot find module 'express'
+Require stack:
+- /app/backend/server.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (/app/backend/server.js:12:17)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
