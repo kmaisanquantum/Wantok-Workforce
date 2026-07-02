@@ -1,10 +1,1 @@
-I have updated `backend/src/admin/controllers/admin_controller.js` to address the Service Providers list segregation issue.
-
-Changes:
-1. Updated `getDashboardMetrics` SQL fallback to count users who have the 'provider' role OR have an entry in `provider_profiles`.
-2. Updated `getAllUsers` provider filter branch to include users who have the 'provider' role OR have an entry in `provider_profiles`.
-
-Both updates use the exact logic requested:
-`EXISTS (SELECT 1 FROM provider_profiles p WHERE p.user_id = u.id)`
-
-This ensures that the list view matches the dashboard count and excludes "pure customers" who were previously dumping into the provider list due to unsegregated generic flags.
+Requested a code review for the latest UI changes in WantokWorkforce.js.

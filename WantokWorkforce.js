@@ -485,104 +485,46 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
         </LinearGradient>
 
 
-          <TouchableOpacity onPress={fetchNearbyProviders} disabled={isSearching} style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, elevation: 4 }}>
-            <Text style={{ fontSize: 18 }}>🛰️</Text>
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{isSearching ? "SEARCHING NEARBY..." : "FIND NEARBY PROVIDERS"}</Text>
+          <TouchableOpacity onPress={fetchNearbyProviders} disabled={isSearching} style={{ marginTop: 12, alignSelf: "center", paddingVertical: 8 }}>
+            <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 14, textDecorationLine: "underline" }}>
+              {isSearching ? "Searching..." : "[Tap here to view search results]"}
+            </Text>
           </TouchableOpacity>
 
           {nearbyWorkers.length > 0 && (
             <View style={{ paddingVertical: 20 }}>
               <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
-              <View style={{ gap: 12 }}>
-                {nearbyWorkers.map((worker) => (
-                  <WorkerCard key={worker.id} worker={worker} onPress={() => onNavigate("workerDetail", worker)} />
+              <View style={{ backgroundColor: "#fff", borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: COLORS.border }}>
+                {/* Table Header */}
+                <View style={{ flexDirection: "row", backgroundColor: "#F9FAFB", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>NAME</Text>
+                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>ROLE</Text>
+                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>LOCATION</Text>
+                  <Text style={{ flex: 1, fontWeight: "700", fontSize: 12, color: COLORS.textMuted, textAlign: "right" }}>RATE</Text>
+                </View>
+                {/* Table Body */}
+                {nearbyWorkers.map((worker, index) => (
+                  <TouchableOpacity
+                    key={worker.id}
+                    onPress={() => onNavigate("workerDetail", worker)}
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      borderBottomWidth: index === nearbyWorkers.length - 1 ? 0 : 1,
+                      borderBottomColor: COLORS.border,
+                      alignItems: "center"
+                    }}
+                  >
+                    <Text style={{ flex: 2, fontSize: 13, fontWeight: "600", color: COLORS.text }}>{worker.name}</Text>
+                    <Text style={{ flex: 2, fontSize: 13, color: COLORS.textMuted }}>{worker.trade || "Provider"}</Text>
+                    <Text style={{ flex: 2, fontSize: 12, color: COLORS.textMuted }}>{worker.operating_location || "N/A"}</Text>
+                    <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: COLORS.primary, textAlign: "right" }}>K{worker.hourly_rate || "0"}</Text>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
           )}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-const PROVIDER_NAV_ITEMS = [
-  { key: "home", icon: "📊", label: "Dashboard" },
-  { key: "active_jobs", icon: "💼", label: "Jobs" },
-  { key: "earnings", icon: "💰", label: "Earnings" },
-  { key: "profile", icon: "👤", label: "Profile" },
-];
-
-const NAV_ITEMS = [
-  { key: "home", icon: "🏠", label: "Home" },
-  { key: "trust", icon: "🛡️", label: "Trust" },
-  { key: "booking", icon: "📅", label: "Bookings" },
-  { key: "profile", icon: "👤", label: "Profile" },
-];
-
-
-function AdminNavigationShell({ renderScreen }) {
-  return (
-    <View style={{ flex: 1 }}>
-      {renderScreen()}
-    </View>
-  );
-}
-
-function ProviderNavigationShell({ renderScreen, navigate, activeNav, onboardingComplete }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>{renderScreen()}</View>
-      {onboardingComplete && (
-        <View
-          style={{
-            backgroundColor: "#fff",
-            height: Platform.OS === "ios" ? 84 : 68,
-            flexDirection: "row",
-            alignItems: "center",
-            borderTopWidth: 1,
-            borderTopColor: COLORS.border,
-            paddingBottom: Platform.OS === "ios" ? 20 : 4,
-          }}
-        >
-          {PROVIDER_NAV_ITEMS.map((item) => {
-            const isActive = activeNav === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                onPress={() => navigate(item.key)}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 3,
-                  paddingVertical: 4,
-                }}
-              >
-                <View
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
-                    backgroundColor: isActive ? "#F0FDF4" : "transparent",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 20 }}>{item.icon}</Text>
-                </View>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: isActive ? "800" : "500",
-                    color: isActive ? COLORS.primary : COLORS.textMuted,
-                  }}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
         </View>
       )}
     </View>
