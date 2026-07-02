@@ -246,7 +246,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-      const handleUpdateProfile = async () => {
+  const handleUpdateProfile = async () => {
     setIsUpdating(true);
     try {
       const response = await fetch(`${API_BASE}/v1/providers/profile`, {
