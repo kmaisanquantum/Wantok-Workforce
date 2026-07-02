@@ -7,7 +7,7 @@ class MatchService {
    * Filters by name or primary_skill.
    * @param {string} query - The search query (trade or name)
    */
-  static async textSearchWorkers(query) {
+  static async textSearchWorkers(query, mappedCategory = null) {
     const pool = UserModel.getPool();
     console.log(`🔍 [MatchService] Performing global text search for: "${query || 'Any'}"`);
 
@@ -24,13 +24,14 @@ class MatchService {
         AND (
           $1::TEXT IS NULL OR
           primary_skill ILIKE '%' || $1 || '%' OR
+          ($2::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $2 || '%') OR
           name ILIKE '%' || $1 || '%'
         )
       ORDER BY is_verified DESC, name ASC;
     `;
 
     try {
-      const { rows } = await pool.query(sql, [query]);
+      const { rows } = await pool.query(sql, [query, mappedCategory]);
       return rows;
     } catch (error) {
       console.error('❌ Text Search Error:', error.message);
@@ -45,7 +46,7 @@ class MatchService {
    * @param {string} trade - Trade Category
    * @param {number} [radiusKm=15] - Search radius in kilometers
    */
-  static async findNearbyWorkers(lat, lon, trade, radiusKm = 15) {
+  static async findNearbyWorkers(lat, lon, query, mappedCategory = null, radiusKm = 15) {
     const pool = UserModel.getPool();
 
     // 1. Try Redis Geospatial Search first
@@ -60,7 +61,7 @@ class MatchService {
 
           const ids = nearbyIds.map(item => item[0]);
 
-          const query = `
+          const sqlQuery = `
             SELECT
               id, name, primary_skill, location_name, is_verified,
               CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
@@ -70,11 +71,11 @@ class MatchService {
                    ELSE NULL END as distance_km
             FROM users
             WHERE id = ANY($3)
-            AND ($4::TEXT IS NULL OR primary_skill ILIKE '%' || $4 || '%')
+            AND ($4::TEXT IS NULL OR primary_skill ILIKE '%' || $4 || '%' OR ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%'))
             ORDER BY distance_km ASC;
           `;
 
-          const { rows } = await pool.query(query, [lon, lat, ids, trade]);
+          const { rows } = await pool.query(sqlQuery, [lon, lat, ids, query, mappedCategory]);
           return rows;
         }
       } catch (redisErr) {
@@ -97,13 +98,13 @@ class MatchService {
       WHERE
         active_persona = 'provider'
         AND is_available = true
-        AND ($3::TEXT IS NULL OR primary_skill ILIKE '%' || $3 || '%')
+        AND ($3::TEXT IS NULL OR primary_skill ILIKE '%' || $3 || '%' OR ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%'))
         AND (location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $4 * 1000))
       ORDER BY distance_km ASC;
     `;
 
     try {
-      const { rows } = await pool.query(fallbackQuery, [lon, lat, trade, radiusKm]);
+      const { rows } = await pool.query(fallbackQuery, [lon, lat, query, radiusKm, mappedCategory]);
       return rows;
     } catch (error) {
       console.error('❌ PostGIS Scan Error:', error.message);
