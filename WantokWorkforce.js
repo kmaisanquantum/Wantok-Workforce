@@ -491,8 +491,20 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             </View>
             <View style={{ backgroundColor: "#fff", borderRadius: 14, paddingVertical: 8, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10, elevation: 4 }}>
               <Text style={{ fontSize: 18 }}>🔍</Text>
-              <TextInput value={searchText} onChangeText={setSearchText} placeholder="Search trade or category..." placeholderTextColor={COLORS.textLight} style={{ flex: 1, fontSize: 14, color: COLORS.text, padding: 0 }} />
-              <View style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 }}><Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>📍 PNG</Text></View>
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Search trade or category..."
+                placeholderTextColor={COLORS.textLight}
+                style={{ flex: 1, fontSize: 14, color: COLORS.text, padding: 0 }}
+                onSubmitEditing={fetchNearbyProviders}
+              />
+              <TouchableOpacity
+                onPress={fetchNearbyProviders}
+                style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>Search</Text>
+              </TouchableOpacity>
             </View>
           </ResponsiveContainer>
         </LinearGradient>
