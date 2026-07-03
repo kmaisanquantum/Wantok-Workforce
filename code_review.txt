@@ -1,0 +1,6 @@
+Review of WantokWorkforce.js:
+1. Missing components (ResponsiveContainer, NAV_ITEMS, Shells) have been added.
+2. HomeScreen hooks moved to top level to fix Rules of Hooks violation.
+3. JSX tags balanced and verified with 'node -c'.
+4. Removed conditional hook calls that were causing runtime crashes.
+5. Simplified TrustScreen and AdminScreen to ensure stability.
