@@ -29,7 +29,8 @@
       "userInterfaceStyle": "light"
     },
     "web": {
-      "favicon": "assets/brand_logo.jpg"
+      "favicon": "assets/brand_logo.jpg",
+      "bundler": "metro"
     },
     "extra": {
       "eas": {
