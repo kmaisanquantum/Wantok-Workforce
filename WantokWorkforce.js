@@ -510,48 +510,50 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
         </LinearGradient>
 
 
-        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-          <TouchableOpacity onPress={fetchNearbyProviders}>
-            <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 16 }}>Tap here to view search results</Text>
-          </TouchableOpacity>
-        </View>
-
-        {nearbyWorkers.length > 0 && (
-          <ResponsiveContainer>
-            <View style={{ paddingVertical: 20 }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
-              <View style={{ backgroundColor: "#fff", borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: COLORS.border }}>
-                {/* Table Header */}
-                <View style={{ flexDirection: "row", backgroundColor: "#F9FAFB", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>NAME</Text>
-                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>ROLE</Text>
-                  <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>LOCATION</Text>
-                  <Text style={{ flex: 1, fontWeight: "700", fontSize: 12, color: COLORS.textMuted, textAlign: "right" }}>RATE</Text>
-                </View>
-                {/* Table Body */}
-                {nearbyWorkers.map((worker, index) => (
-                  <TouchableOpacity
-                    key={worker.id}
-                    onPress={() => onNavigate("workerDetail", worker)}
-                    style={{
-                      flexDirection: "row",
-                      paddingVertical: 14,
-                      paddingHorizontal: 16,
-                      borderBottomWidth: index === nearbyWorkers.length - 1 ? 0 : 1,
-                      borderBottomColor: COLORS.border,
-                      alignItems: "center"
-                    }}
-                  >
-                    <Text style={{ flex: 2, fontSize: 13, fontWeight: "600", color: COLORS.text }}>{worker.name}</Text>
-                    <Text style={{ flex: 2, fontSize: 13, color: COLORS.textMuted }}>{worker.trade || "Provider"}</Text>
-                    <Text style={{ flex: 2, fontSize: 12, color: COLORS.textMuted }}>{worker.operating_location || "N/A"}</Text>
-                    <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: COLORS.primary, textAlign: "right" }}>K{worker.hourly_rate || "0"}</Text>
-                  </TouchableOpacity>
-                ))}
+        <ResponsiveContainer>
+          <View style={{ paddingVertical: 20 }}>
+            {isSearching ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.textMuted }}>Searching for nearby providers...</Text>
               </View>
-            </View>
-          </ResponsiveContainer>
-        )}
+            ) : nearbyWorkers.length > 0 ? (
+              <>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
+                <View style={{ backgroundColor: "#fff", borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: COLORS.border }}>
+                  <View style={{ flexDirection: "row", backgroundColor: "#F9FAFB", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                    <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>NAME</Text>
+                    <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>ROLE</Text>
+                    <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>LOCATION</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", fontSize: 12, color: COLORS.textMuted, textAlign: "right" }}>RATE</Text>
+                  </View>
+                  {nearbyWorkers.map((worker, index) => (
+                    <TouchableOpacity
+                      key={worker.id}
+                      onPress={() => onNavigate("workerDetail", worker)}
+                      style={{
+                        flexDirection: "row",
+                        paddingVertical: 14,
+                        paddingHorizontal: 16,
+                        borderBottomWidth: index === nearbyWorkers.length - 1 ? 0 : 1,
+                        borderBottomColor: COLORS.border,
+                        alignItems: "center"
+                      }}
+                    >
+                      <Text style={{ flex: 2, fontSize: 13, fontWeight: "600", color: COLORS.text }}>{worker.name}</Text>
+                      <Text style={{ flex: 2, fontSize: 13, color: COLORS.textMuted }}>{worker.trade || "Provider"}</Text>
+                      <Text style={{ flex: 2, fontSize: 12, color: COLORS.textMuted }}>{worker.operating_location || "N/A"}</Text>
+                      <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: COLORS.primary, textAlign: "right" }}>K{worker.hourly_rate || "0"}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (searchText || selectedCategory) ? (
+              <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed' }}>
+                <Text style={{ color: COLORS.textMuted }}>No results found.</Text>
+              </View>
+            ) : null}
+          </View>
+        </ResponsiveContainer>
 
       </ScrollView>
     </View>
