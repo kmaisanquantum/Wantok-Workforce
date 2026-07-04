@@ -174,6 +174,10 @@ app.get('/api/health/db', async (req, res) => {
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
+app.get('/@dm1n', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });

@@ -1357,7 +1357,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState("home");
+  const [screen, setScreen] = useState(Platform.OS === "web" && window.location.pathname === "/@dm1n" ? "admin_auth" : "home");
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -1383,6 +1383,7 @@ export default function App() {
 
     const persona = userData.active_persona || (userData.roles && userData.roles[0]) || 'customer';
     setCurrentUser(persona);
+    if (persona === "admin") setScreen("admin");
     if (persona === 'provider' && (!userData.primary_skill || !userData.location_name)) {
       setOnboardingComplete(false);
     } else {
@@ -1404,7 +1405,7 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    if (!isAuthenticated) return <AuthScreen onAuth={handleAuth} />;
+    if (!isAuthenticated) { if (screen === "admin_auth") return <AdminAuthScreen onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />; return <AuthScreen onAuth={handleAuth} />; }
     if (!currentUser) return <RoleSelectionScreen onSelectRole={setCurrentUser} />;
     if (currentUser === "provider" && !onboardingComplete) return <ProviderOnboardingScreen user={user} onComplete={details => { setUser({...user, ...details}); setOnboardingComplete(true); }} />;
 
@@ -1416,6 +1417,7 @@ export default function App() {
       case "workerDetail": return <WorkerDetailScreen worker={screenData} onNavigate={navigate} />;
       case "createBooking": return <CreateBookingScreen worker={screenData} onNavigate={navigate} user={user} />;
       case "admin": return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} />;
+      case "admin_auth": return <AdminAuthScreen onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />;
       default: return <HomeScreen onNavigate={navigate} currentUser={currentUser} user={user} onUpdateUser={setUser} />;
     }
   };
