@@ -4,36 +4,55 @@ const redisClient = require('../../../db/redis_init');
 class MatchService {
   /**
    * Robust global text-based search for workers.
-   * Filters by name or primary_skill.
-   * @param {string} query - The search query (trade or name)
+   * Filters by name, primary_skill, or location_name using tokenized matching.
    */
   static async textSearchWorkers(query, mappedCategory = null) {
     const pool = UserModel.getPool();
-    console.log(`🔍 [MatchService] Performing global text search for: "${query || 'Any'}"`);
+    console.log(`🔍 [MatchService] Performing global search for: "${query || 'Any'}"`);
+
+    let pgParams = [];
+    let pgWhereClauses = ["active_persona = 'provider'", "is_available = true"];
+
+    // Handle "all" wildcards
+    const isSearchAll = !query || query === '*all' || query === '*';
+
+    if (!isSearchAll) {
+      const tokens = query.trim().split(/\s+/).filter(t => t.length > 0);
+      if (tokens.length > 0) {
+        const tokenClauses = tokens.map((token) => {
+          const pIndex = pgParams.length + 1;
+          pgParams.push(`%${token}%`);
+
+          if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
+              const rIndex = pgParams.length + 1;
+              pgParams.push(parseFloat(token));
+              return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
+          }
+          return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
+        });
+        pgWhereClauses.push(`(${tokenClauses.join(' AND ')})`);
+      }
+    }
+
+    if (mappedCategory) {
+      const cIndex = pgParams.length + 1;
+      pgParams.push(`%${mappedCategory}%`);
+      pgWhereClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
+    }
 
     const sql = `
       SELECT
-        id, name, primary_skill, location_name, is_verified,
+        id, name, primary_skill, location_name, is_verified, hourly_rate,
         CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
         CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
         NULL as distance_km
       FROM users
-      WHERE
-        active_persona = 'provider'
-        AND is_available = true
-        AND (
-          $1::TEXT IS NULL OR
-          primary_skill ILIKE '%' || $1 || '%' OR
-          ($2::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $2 || '%') OR
-          name ILIKE '%' || $1 || '%' OR
-          location_name ILIKE '%' || $1 || '%' OR
-          (CASE WHEN $1 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $1::NUMERIC ELSE FALSE END)
-        )
+      WHERE ${pgWhereClauses.join(' AND ')}
       ORDER BY is_verified DESC, name ASC;
     `;
 
     try {
-      const { rows } = await pool.query(sql, [query, mappedCategory]);
+      const { rows } = await pool.query(sql, pgParams);
       return rows;
     } catch (error) {
       console.error('❌ Text Search Error:', error.message);
@@ -42,89 +61,68 @@ class MatchService {
   }
 
   /**
-   * Find workers near a specific location using Redis Geospatial index with SQL fallback.
-   * @param {number} lat - Latitude
-   * @param {number} lon - Longitude
-   * @param {string} trade - Trade Category
-   * @param {number} [radiusKm=15] - Search radius in kilometers
+   * Find workers near a location with SQL fallback.
    */
-  static async findNearbyWorkers(lat, lon, query, mappedCategory = null, radiusKm = 15) {
+  static async findNearbyWorkers(lat, lon, query, mappedCategory = null, radiusKm = 50) {
     const pool = UserModel.getPool();
 
-    // 1. Try Redis Geospatial Search first
-    if (redisClient) {
-      try {
-        console.log(`📡 Redis: Searching active providers within ${radiusKm}km of [${lat}, ${lon}]`);
+    let pgParams = [lon, lat, radiusKm];
+    let pgWhereClauses = ["active_persona = 'provider'", "is_available = true"];
+    const spatialClause = `(location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $3 * 1000))`;
 
-        const nearbyIds = await redisClient.georadius('active_providers', lon, lat, radiusKm, 'km', 'WITHDIST');
+    // Handle "all" wildcards
+    const isSearchAll = !query || query === '*all' || query === '*';
 
-        if (nearbyIds && nearbyIds.length > 0) {
-          console.log(`✅ Redis: Found ${nearbyIds.length} nearby providers in cache`);
-
-          const ids = nearbyIds.map(item => item[0]);
-
-          const sqlQuery = `
-            SELECT
-              id, name, primary_skill, location_name, is_verified,
-              CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
-              CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
-              CASE WHEN location_coords IS NOT NULL
-                   THEN ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
-                   ELSE NULL END as distance_km
-            FROM users
-            WHERE id = ANY($3)
-            AND (
-              $4::TEXT IS NULL OR
-              primary_skill ILIKE '%' || $4 || '%' OR
-              ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%') OR
-              name ILIKE '%' || $4 || '%' OR
-              location_name ILIKE '%' || $4 || '%' OR
-              (CASE WHEN $4 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $4::NUMERIC ELSE FALSE END)
-            )
-            ORDER BY distance_km ASC;
-          `;
-
-          const { rows } = await pool.query(sqlQuery, [lon, lat, ids, query, mappedCategory]);
-          return rows;
+    let textClauses = [];
+    if (!isSearchAll) {
+      const tokens = query.trim().split(/\s+/).filter(t => t.length > 0);
+      textClauses = tokens.map((token) => {
+        const pIndex = pgParams.length + 1;
+        pgParams.push(`%${token}%`);
+        if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
+            const rIndex = pgParams.length + 1;
+            pgParams.push(parseFloat(token));
+            return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
         }
-      } catch (redisErr) {
-        console.warn('⚠️ Redis Geospatial Search Error, falling back to SQL:', redisErr.message);
-      }
+        return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
+      });
     }
 
-    // 2. Fallback to PostGIS SQL scan
-    console.log('🔄 Fallback: Executing PostGIS spatial scan...');
+    if (mappedCategory) {
+      const cIndex = pgParams.length + 1;
+      pgParams.push(`%${mappedCategory}%`);
+      textClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
+    }
 
-    const fallbackQuery = `
+    if (textClauses.length > 0) {
+       pgWhereClauses.push(`(${textClauses.join(' AND ')})`);
+    } else {
+       pgWhereClauses.push(spatialClause);
+    }
+
+    const sql = `
       SELECT
-        id, name, primary_skill, location_name, is_verified,
+        id, name, primary_skill, location_name, is_verified, hourly_rate,
         CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
         CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
         CASE WHEN location_coords IS NOT NULL
              THEN ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
              ELSE NULL END as distance_km
       FROM users
-      WHERE
-        active_persona = 'provider'
-        AND is_available = true
-        AND (
-          $3::TEXT IS NULL OR
-          primary_skill ILIKE '%' || $3 || '%' OR
-          ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%') OR
-          name ILIKE '%' || $3 || '%' OR
-          location_name ILIKE '%' || $3 || '%' OR
-          (CASE WHEN $3 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $3::NUMERIC ELSE FALSE END)
-        )
-        AND (location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $4 * 1000))
-      ORDER BY distance_km ASC;
+      WHERE ${pgWhereClauses.join(' AND ')}
+      ORDER BY
+        (CASE WHEN location_coords IS NOT NULL AND ${spatialClause} THEN 0 ELSE 1 END),
+        is_verified DESC,
+        distance_km ASC NULLS LAST,
+        name ASC;
     `;
 
     try {
-      const { rows } = await pool.query(fallbackQuery, [lon, lat, query, radiusKm, mappedCategory]);
+      const { rows } = await pool.query(sql, pgParams);
       return rows;
     } catch (error) {
-      console.error('❌ PostGIS Scan Error:', error.message);
-      throw error;
+      console.error('❌ findNearbyWorkers Error:', error.message);
+      return this.textSearchWorkers(query, mappedCategory);
     }
   }
 }
