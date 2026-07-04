@@ -25,7 +25,9 @@ class MatchService {
           $1::TEXT IS NULL OR
           primary_skill ILIKE '%' || $1 || '%' OR
           ($2::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $2 || '%') OR
-          name ILIKE '%' || $1 || '%'
+          name ILIKE '%' || $1 || '%' OR
+          location_name ILIKE '%' || $1 || '%' OR
+          (CASE WHEN $1 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $1::NUMERIC ELSE FALSE END)
         )
       ORDER BY is_verified DESC, name ASC;
     `;
@@ -71,7 +73,14 @@ class MatchService {
                    ELSE NULL END as distance_km
             FROM users
             WHERE id = ANY($3)
-            AND ($4::TEXT IS NULL OR primary_skill ILIKE '%' || $4 || '%' OR ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%'))
+            AND (
+              $4::TEXT IS NULL OR
+              primary_skill ILIKE '%' || $4 || '%' OR
+              ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%') OR
+              name ILIKE '%' || $4 || '%' OR
+              location_name ILIKE '%' || $4 || '%' OR
+              (CASE WHEN $4 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $4::NUMERIC ELSE FALSE END)
+            )
             ORDER BY distance_km ASC;
           `;
 
@@ -98,7 +107,14 @@ class MatchService {
       WHERE
         active_persona = 'provider'
         AND is_available = true
-        AND ($3::TEXT IS NULL OR primary_skill ILIKE '%' || $3 || '%' OR ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%'))
+        AND (
+          $3::TEXT IS NULL OR
+          primary_skill ILIKE '%' || $3 || '%' OR
+          ($5::TEXT IS NOT NULL AND primary_skill ILIKE '%' || $5 || '%') OR
+          name ILIKE '%' || $3 || '%' OR
+          location_name ILIKE '%' || $3 || '%' OR
+          (CASE WHEN $3 ~ '^[0-9]+(\.[0-9]+)?$' THEN hourly_rate <= $3::NUMERIC ELSE FALSE END)
+        )
         AND (location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $4 * 1000))
       ORDER BY distance_km ASC;
     `;
