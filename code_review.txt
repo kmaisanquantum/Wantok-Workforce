@@ -1,6 +1,6 @@
-Review of WantokWorkforce.js:
-- Removed "Tap here to view search results" placeholder link.
-- Implemented a structured search results table with headers (Name, Role, Location, Rate).
-- Added dynamic states for "Searching..." and "No results found".
-- Ensured table is contained within a ResponsiveContainer for consistent layout.
-- Verified JSX syntax and component integrity.
+Review of backend/src/match/services/match_service.js:
+- Expanded search logic to query name, primary_skill, and location_name.
+- Added support for numeric price filtering (hourly_rate) using regex pattern matching in SQL.
+- Updated all three search implementations (textSearchWorkers, Redis filter, PostGIS scan) for consistency.
+- Maintained support for mappedCategory (synonyms).
+- Verified SQL syntax for case-insensitive matching (ILIKE) and regex guards.
