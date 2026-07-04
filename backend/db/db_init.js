@@ -12,13 +12,11 @@ async function initializeDatabase(pool) {
     console.log(`🔗 [Success] Database reached successfully via: ${host}`);
 
     try {
-      // 1. Core Schema Synchronization (MUST RUN FIRST)
       console.log("🔄 Running core schema synchronization...");
       const schemaPath = path.join(__dirname, "schema.sql");
       const schema = fs.readFileSync(schemaPath, "utf8");
       await client.query(schema);
 
-      // 2. Schema Patches and Seeds (Non-critical, wrapped in try/catch)
       const runPatch = async (fileName, description) => {
         try {
           console.log(`🔄 Applying ${description} (${fileName})...`);
@@ -43,6 +41,7 @@ async function initializeDatabase(pool) {
       await runPatch("seed_categories.sql", "categories seed");
       await runPatch("init_admin.sql", "admin user seed");
       await runPatch("seed_stats.sql", "system stats seed");
+      await runPatch("patch_seed_paul.sql", "Paul seed");
       await runPatch("patch_backfill_roles.sql", "user roles backfill");
       await runPatch("patch_add_mixed_role.sql", "add mixed role to enum");
       await runPatch("patch_admin_ledger.sql", "admin ledger and dispute support");
@@ -62,7 +61,6 @@ async function initializeDatabase(pool) {
     console.error("Error Message:", err.message);
     console.error("Error Code:", err.code);
     console.log("🚀 Continuing server startup anyway. Database-dependent features will be unavailable until connection is restored.");
-
   }
 }
 
