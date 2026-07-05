@@ -1,15 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const MessageController = require('../controllers/message_controller');
-const auth = require('../../auth/middlewares/auth');
+const { authMiddleware } = require('../../auth/middlewares/auth');
 
-// POST /api/messages : Send a new message
-router.post('/', auth, MessageController.sendMessage);
-
-// GET /api/messages : Fetch chat history
-router.get('/', auth, MessageController.getChatHistory);
-
-// GET /api/messages/inbox : Fetch active conversations
-router.get('/inbox', auth, MessageController.getInbox);
+// Explicitly bind methods to avoid context issues or provide wrapper functions
+router.post('/', authMiddleware, (req, res) => MessageController.sendMessage(req, res));
+router.get('/', authMiddleware, (req, res) => MessageController.getChatHistory(req, res));
+router.get('/inbox', authMiddleware, (req, res) => MessageController.getInbox(req, res));
 
 module.exports = router;
