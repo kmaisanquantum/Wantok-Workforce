@@ -522,7 +522,8 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
       </ScrollView>
     </View>
   );
-}\nfunction AdminNavigationShell({ renderScreen }) {
+}
+function AdminNavigationShell({ renderScreen }) {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>{renderScreen()}</View>
