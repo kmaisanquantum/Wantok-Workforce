@@ -229,28 +229,33 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
   const fetchNearbyProviders = async () => {
     setIsSearching(true);
-    const lat = -9.4438;
-    const lon = 147.1803;
-
     try {
-      // Fetch the broad list of providers using the base endpoint
-      const url = `${API_BASE}/match/nearby?latitude=${lat}&longitude=${lon}`;
+      // Request the entire list of workers without any category filters or parameters
+      const url = `${API_BASE}/match/nearby`;
       const response = await fetch(url);
       const data = await response.json().catch(() => ({ error: "Invalid response from server" }));
 
       if (response.ok) {
         const query = (searchText || "").toLowerCase().trim();
-        const openSearchResults = (data.workers || []).filter(worker => {
+        const allWorkers = data.workers || [];
+
+        const openResults = allWorkers.filter(worker => {
           if (!query) return true;
-          return (
-            (worker.name || '').toLowerCase().includes(query) ||
-            (worker.role || '').toLowerCase().includes(query) ||
-            (worker.bio || '').toLowerCase().includes(query) ||
-            (worker.category || '').toLowerCase().includes(query) ||
-            (worker.skills && worker.skills.some(skill => skill.toLowerCase().includes(query)))
+
+          const nameMatch = (worker.name || '').toLowerCase().includes(query);
+          const roleMatch = (worker.role || '').toLowerCase().includes(query);
+          const bioMatch = (worker.bio || '').toLowerCase().includes(query);
+          const categoryMatch = (worker.category || '').toLowerCase().includes(query);
+
+          // Check skills array if it exists
+          const skillsMatch = worker.skills && Array.isArray(worker.skills) && worker.skills.some(skill =>
+            skill.toLowerCase().includes(query)
           );
+
+          return nameMatch || roleMatch || bioMatch || categoryMatch || skillsMatch;
         });
-        setNearbyWorkers(openSearchResults);
+
+        setNearbyWorkers(openResults);
       } else {
         setNearbyWorkers([]);
       }
