@@ -209,6 +209,15 @@ function ProviderFinancialDashboard({ user }) {
 }
 
 function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
+  const getDynamicGreeting = () => {
+    const currentHour = new Date().getHours();
+    if (currentHour >= 5 && currentHour < 12) return "Good morning";
+    if (currentHour >= 12 && currentHour < 17) return "Good afternoon";
+    if (currentHour >= 17 && currentHour < 21) return "Good evening";
+    return "Good night";
+  };
+  const fullCustomerName = user?.name || "";
+  const customerFirstName = fullCustomerName ? fullCustomerName.split(" ")[0] : "";
   // Hooks MUST be at the top level
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -568,7 +577,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
           <ResponsiveContainer>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <View>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>Good morning 👋</Text>
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{`${getDynamicGreeting()}${customerFirstName ? `, ${customerFirstName}` : "" } 👋`}</Text>
                 <Text style={{ color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 2 }}>Find a Wantok</Text>
               </View>
               <TouchableOpacity style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" }} onPress={() => onNavigate("profile")}>
