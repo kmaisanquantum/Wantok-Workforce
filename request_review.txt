@@ -1,1 +1,10 @@
-Requested a code review for the latest UI changes in WantokWorkforce.js.
+I have updated WantokWorkforce.js to implement synonym mapping in the fetchNearbyProviders function.
+
+Key changes:
+- Defined CATEGORY_SYNONYMS for 'legal' and 'automotive'.
+- Normalized search input (selectedCategory || searchText).
+- Resolved targetCategory based on synonyms.
+- Updated API fetch URL to use targetCategory.
+- Preserved existing UI state handling and error alerts.
+
+Please review the implementation in WantokWorkforce.js around line 230.
