@@ -49,6 +49,7 @@ async function initializeDatabase(pool) {
       await runPatch("patch_provider_profile_fields.sql", "provider profile detailed fields");
       await runPatch("patch_vouching_and_ledger.sql", "vouching and ledger support");
       await runPatch("patch_booking_workflow.sql", "booking workflow financial counters");
+      await runPatch("patch_messages.sql", "messages table patch");
 
       console.log("✅ [Ready] Database initialization complete.");
     } finally {
