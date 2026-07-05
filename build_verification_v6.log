@@ -1,0 +1,30 @@
+
+> wantok-workforce@1.0.1 build
+> NODE_OPTIONS="--max-old-space-size=2048" npx expo export
+
+(node:283518) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Starting Metro Bundler
+Web Bundled 9085ms (node_modules/expo/AppEntry.js)
+iOS Bundled 13888ms (node_modules/expo/AppEntry.js)
+Android Bundled 15944ms (node_modules/expo/AppEntry.js)
+
+Exporting 1 asset:
+assets/brand_logo.jpg (61.4 kB)
+
+Exporting 1 bundle for ios:
+_expo/static/js/ios/AppEntry-932dabea1ce15e2e514e716e0779f2dc.hbc (1.6 MB)
+
+Exporting 1 bundle for android:
+_expo/static/js/android/AppEntry-c4bad74892337c750d81a8e300d9f408.hbc (1.61 MB)
+
+Exporting 1 bundle for web:
+_expo/static/js/web/AppEntry-308e4fb040288d235432f3fb068b192b.js (416 kB)
+
+Exporting 4 files:
+assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg (61.4 kB)
+favicon.ico (14.5 kB)
+index.html (1.23 kB)
+metadata.json (374 B)
+
+App exported to: dist

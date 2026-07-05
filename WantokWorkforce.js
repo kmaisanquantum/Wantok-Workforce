@@ -86,13 +86,13 @@ const TrustBadge = () => (
 
 // ─── SCREENS ───────────────────────────────────────────────────────────────
 
-function ProviderVouchingForm({ user, onVouchSubmitted }) {
+function ProviderVouchingForm({ user, onVouchSubmitted, showAlert }) {
   const [gatekeeper, setGatekeeper] = useState({ name: '', role: '', contact: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!gatekeeper.name || !gatekeeper.role || !gatekeeper.contact) {
-      alert("Please fill in all gatekeeper details.");
+      showAlert("Please fill in all gatekeeper details.");
       return;
     }
     setIsSubmitting(true);
@@ -104,13 +104,13 @@ function ProviderVouchingForm({ user, onVouchSubmitted }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Verification request sent to community gatekeeper!");
+        showAlert("Verification request sent to community gatekeeper!");
         onVouchSubmitted();
       } else {
-        alert(data.error || "Submission failed.");
+        showAlert(data.error || "Submission failed.");
       }
     } catch (err) {
-      alert("Network error.");
+      showAlert("Network error.");
     } finally {
       setIsSubmitting(false);
     }
@@ -130,7 +130,7 @@ function ProviderVouchingForm({ user, onVouchSubmitted }) {
   );
 }
 
-function ProviderFinancialDashboard({ user }) {
+function ProviderFinancialDashboard({ user, showAlert }) {
   const [ledger, setLedger] = useState({ metrics: { totalEarned: 0, fundsInEscrow: 0, withdrawnToWallet: 0 }, history: [] });
   const [loading, setLoading] = useState(true);
 
@@ -208,7 +208,7 @@ function ProviderFinancialDashboard({ user }) {
   );
 }
 
-function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
+function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) {
   const getDynamicGreeting = () => {
     const currentHour = new Date().getHours();
     if (currentHour >= 5 && currentHour < 12) return "Good morning";
@@ -356,14 +356,14 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
-        alert("Profile updated successfully!");
+        showAlert("Profile updated successfully!");
         setIsUpdateModalVisible(false);
         onUpdateUser({ ...user, primary_skill: profileForm.primary_skill, hourly_rate: profileForm.hourly_rate });
       } else {
-        alert(data.error || "Failed to update profile");
+        showAlert(data.error || "Failed to update profile");
       }
     } catch (error) {
-      alert("Network error updating profile");
+      showAlert("Network error updating profile");
     } finally {
       setIsUpdating(false);
     }
@@ -440,7 +440,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
                         await fetch(`${API_BASE}/auth/availability`, { method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${user?.token}` }, body: JSON.stringify({ is_available: newStatus }) });
                       } catch (err) {
                         onUpdateUser({ ...user, is_available: !newStatus });
-                        alert("Could not update status.");
+                        showAlert("Could not update status.");
                       }
                     }} style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: user?.is_available ? COLORS.primary : "#E5E7EB", padding: 2, justifyContent: "center" }}>
                       <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#fff", transform: [{ translateX: user?.is_available ? 22 : 0 }], elevation: 2 }} />
@@ -454,12 +454,12 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
                   <View style={{ height: 6, backgroundColor: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}><View style={{ width: vStatus?.verified ? "98%" : "92%", height: "100%", backgroundColor: COLORS.primary }} /></View>
                 </View>
 
-                <ProviderFinancialDashboard user={user} />
+                <ProviderFinancialDashboard user={user} showAlert={showAlert} />
               </View>
 
               <View style={{ flex: isDesktop ? 1 : 1, gap: 16 }}>
                 {!vStatus?.verified && vStatus?.vouch_status !== "pending" && (
-                  <ProviderVouchingForm user={user} onVouchSubmitted={fetchVerification} />
+                  <ProviderVouchingForm user={user} showAlert={showAlert} onVouchSubmitted={fetchVerification} />
                 )}
                 {vStatus?.vouch_status === "pending" && (
                   <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, alignItems: "center", borderStyle: "dashed", borderWidth: 1, borderColor: COLORS.primary }}>
@@ -733,7 +733,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
 
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
 
-function TrustScreen({ onNavigate }) {
+function TrustScreen({ onNavigate, showAlert }) {
   const [workers] = useState(
     [].map((w) => ({ ...w, trustScore: Math.floor(70 + Math.random() * 30) }))
   );
@@ -874,7 +874,7 @@ function TrustScreen({ onNavigate }) {
   );
 }
 
-function BookingsScreen({ onNavigate, user, currentUser }) {
+function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -912,13 +912,13 @@ function BookingsScreen({ onNavigate, user, currentUser }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message || "Action successful");
+        showAlert(data.message || "Action successful");
         fetchBookings();
       } else {
-        alert(data.error || "Action failed");
+        showAlert(data.error || "Action failed");
       }
     } catch (e) {
-      alert("Error performing action: " + e.message);
+      showAlert("Error performing action: " + e.message);
     } finally {
       setLoading(false);
     }
@@ -986,7 +986,7 @@ function BookingsScreen({ onNavigate, user, currentUser }) {
   );
 }
 
-function RoleSelectionScreen({ onSelectRole }) {
+function RoleSelectionScreen({ onSelectRole, showAlert }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 20, justifyContent: "center" }}>
       <Text style={{ fontSize: 26, fontWeight: "900", color: COLORS.primary, textAlign: "center", marginBottom: 12 }}>
@@ -1057,14 +1057,14 @@ function RoleSelectionScreen({ onSelectRole }) {
   );
 }
 
-function ProviderOnboardingScreen({ onComplete, user }) {
+function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
   const [trade, setTrade] = useState("");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleComplete = async () => {
     if (!trade || !city) {
-      alert("Please fill in both fields.");
+      showAlert("Please fill in both fields.");
       return;
     }
     setLoading(true);
@@ -1086,11 +1086,11 @@ function ProviderOnboardingScreen({ onComplete, user }) {
       if (response.ok) {
         onComplete({ primary_skill: trade, location_name: city });
       } else {
-        alert(data.error || "Failed to update profile.");
+        showAlert(data.error || "Failed to update profile.");
       }
     } catch (error) {
       console.error("Trade profile update error:", error);
-      alert("Network error. Please try again.");
+      showAlert("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -1161,7 +1161,7 @@ function ProviderOnboardingScreen({ onComplete, user }) {
   );
 }
 
-function AuthScreen({ onAuth }) {
+function AuthScreen({ onAuth, showAlert }) {
   const [loading, setLoading] = useState(false);
   const [dbStatus, setDbStatus] = useState("checking");
 
@@ -1202,7 +1202,7 @@ function AuthScreen({ onAuth }) {
 
   const handleSignIn = async () => {
     if (!identifier || !password) {
-      alert("Please enter both identifier (Phone/Email) and password.");
+      showAlert("Please enter both identifier (Phone/Email) and password.");
       return;
     }
     if (loading) return;
@@ -1225,14 +1225,14 @@ function AuthScreen({ onAuth }) {
       if (response.ok) {
         onAuth({ ...data.user, token: data.token, active_persona: (data.user.roles && data.user.roles.includes('admin')) ? 'admin' : data.user.role }, false);
       } else {
-        alert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signin failed"));
+        showAlert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signin failed"));
       }
     } catch (error) {
       if (error.name === 'AbortError') {
-        alert('Server connection timeout. Please check backend logs.');
+        showAlert('Server connection timeout. Please check backend logs.');
       } else {
         console.error("🚨 Full Network Error (SignIn):", error);
-        alert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
+        showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
       }
     } finally {
       clearTimeout(timeoutId);
@@ -1243,17 +1243,17 @@ function AuthScreen({ onAuth }) {
   const handleSignUpNext = async () => {
     if (signUpStep === 1) {
       if (!name || !email) {
-        alert("Please provide your full name and email address.");
+        showAlert("Please provide your full name and email address.");
         return;
       }
       setSignUpStep(2);
     } else {
       if (!phone || !password) {
-        alert("Please provide your phone number and create a password.");
+        showAlert("Please provide your phone number and create a password.");
         return;
       }
       if (password.length < 6) {
-        alert("Password must be at least 6 characters long.");
+        showAlert("Password must be at least 6 characters long.");
         return;
       }
       if (loading) return;
@@ -1277,14 +1277,14 @@ function AuthScreen({ onAuth }) {
           console.log('✅ Registration success payload:', data);
           onAuth({ ...data.user, token: data.token, active_persona: data.user.role }, true);
         } else {
-          alert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signup failed"));
+          showAlert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signup failed"));
         }
       } catch (error) {
         if (error.name === 'AbortError') {
-          alert('Server connection timeout. Please check backend logs.');
+          showAlert('Server connection timeout. Please check backend logs.');
         } else {
           console.error("🚨 Full Network Error (SignUp):", error);
-          alert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
+          showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
         }
       } finally {
         clearTimeout(timeoutId);
@@ -1525,7 +1525,7 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-function AdminAuthScreen({ onAuth }) {
+function AdminAuthScreen({ onAuth, showAlert }) {
   const [loading, setLoading] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -1533,7 +1533,7 @@ function AdminAuthScreen({ onAuth }) {
 
   const handleAdminLogin = async () => {
     if (!identifier || !password) {
-      alert("Please enter admin credentials.");
+      showAlert("Please enter admin credentials.");
       return;
     }
     setLoading(true);
@@ -1553,15 +1553,15 @@ function AdminAuthScreen({ onAuth }) {
         if (data.user.roles && data.user.roles.includes('admin')) {
           onAuth({ ...data.user, token: data.token, active_persona: 'admin' }, false);
         } else {
-          alert("Access Denied: Administrative privileges required.");
+          showAlert("Access Denied: Administrative privileges required.");
           if (Platform.OS === 'web') window.location.href = '/';
         }
       } else {
-        alert("Network Status: " + response.status + "\nDetails: " + (data.error || "Login failed"));
+        showAlert("Network Status: " + response.status + "\nDetails: " + (data.error || "Login failed"));
       }
     } catch (error) {
       console.error("🚨 Full Network Error (AdminLogin):", error);
-      alert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Unknown network error."));
+      showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Unknown network error."));
     } finally {
       setLoading(false);
     }
@@ -1646,7 +1646,7 @@ function AdminAuthScreen({ onAuth }) {
       </View>
     );
 }
-function WorkerDetailScreen({ worker, onNavigate }) {
+function WorkerDetailScreen({ worker, onNavigate, showAlert }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
 
@@ -1679,7 +1679,7 @@ function WorkerDetailScreen({ worker, onNavigate }) {
   );
 }
 
-function CreateBookingScreen({ worker, onNavigate, user }) {
+function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
   const [loading, setLoading] = useState(false);
 
   const handleBooking = async () => {
@@ -1699,13 +1699,13 @@ function CreateBookingScreen({ worker, onNavigate, user }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Booking Request Sent!");
+        showAlert("Booking Request Sent!");
         onNavigate("booking");
       } else {
-        alert(data.error || "Failed to create booking");
+        showAlert(data.error || "Failed to create booking");
       }
     } catch (e) {
-      alert("Error creating booking: " + e.message);
+      showAlert("Error creating booking: " + e.message);
     } finally {
       setLoading(false);
     }
@@ -1732,7 +1732,7 @@ function CreateBookingScreen({ worker, onNavigate, user }) {
   );
 }
 
-function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser }) {
+function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
 
@@ -1767,7 +1767,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser }
   );
 }
 
-function AdminScreen({ onNavigate, onLogout, user }) {
+function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const { width: screenWidth } = Dimensions.get("window");
   const isDesktop = screenWidth > 1024;
   const [stats, setStats] = useState({ totalCustomers: 0, totalProviders: 0, totalMatches: 0 });
@@ -1864,7 +1864,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        alert("🔄 Database Reconciliation Complete");
+        showAlert("🔄 Database Reconciliation Complete");
         const usersData = data.users || data.data?.users || data.data || data;
         setUsers(Array.isArray(usersData) ? usersData : []);
       }
@@ -1938,8 +1938,8 @@ function AdminScreen({ onNavigate, onLogout, user }) {
         if (activeTab === "verification") { fetchPending(); fetchQueue(); }
         if (activeTab === "dashboard") fetchStats();
         setModalVisible(false);
-      } else { alert("Action failed"); }
-    } catch (e) { alert("Error connecting to server"); }
+      } else { showAlert("Action failed"); }
+    } catch (e) { showAlert("Error connecting to server"); }
   };
 
   return (
@@ -2189,7 +2189,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                       pendingVouching?.map(vouch => (
                         <View key={vouch.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, flexDirection: "row", gap: 16 }}>
                           <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: "800", color: "#1E293B" }}>Gatekeeper: {vouch.gatekeeper_name}</Text><Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "700" }}>{vouch.gatekeeper_role}</Text><Text style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Contact: {vouch.gatekeeper_contact}</Text><View style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 8 }} /><Text style={{ fontSize: 12, color: "#1E293B" }}>Provider: <Text style={{ fontWeight: "700" }}>{vouch.provider_name}</Text> ({vouch.provider_email})</Text></View>
-                          <View style={{ width: 100, gap: 8, justifyContent: "center" }}><TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/vouch/${vouch.id}/approve`, { method: "POST", headers: { "Authorization": `Bearer ${user?.token}` } }).then(res => res.ok ? (alert("Vouch Approved"), fetchPending()) : alert("Approval failed")); }} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Verify</Text></TouchableOpacity></View>
+                          <View style={{ width: 100, gap: 8, justifyContent: "center" }}><TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/vouch/${vouch.id}/approve`, { method: "POST", headers: { "Authorization": `Bearer ${user?.token}` } }).then(res => res.ok ? (showAlert("Vouch Approved"), fetchPending()) : showAlert("Approval failed")); }} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Verify</Text></TouchableOpacity></View>
                         </View>
                       ))
                     )}
@@ -2201,7 +2201,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                     <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 16, elevation: 2 }}>
                       <View style={{ marginBottom: 24 }}><View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}><Text style={{ fontSize: 14, fontWeight: "700", color: "#1E293B" }}>PostGIS Search Radius (km)</Text><Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.primary }}>{systemSettings?.match_radius || 50} km</Text></View><TextInput keyboardType="numeric" value={String(systemSettings?.match_radius || 50)} onChangeText={(val) => setSystemSettings({ ...systemSettings, match_radius: val })} onBlur={() => handleUserAction(null, 'update_settings', { match_radius: systemSettings?.match_radius })} style={{ backgroundColor: "#F1F5F9", padding: 12, borderRadius: 10, fontSize: 15, fontWeight: "600" }} /></View>
                       <View style={{ marginBottom: 24 }}><View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}><Text style={{ fontSize: 14, fontWeight: "700", color: "#1E293B" }}>Global Fee Metric (K)</Text><Text style={{ fontSize: 16, fontWeight: "800", color: "#10B981" }}>K{parseFloat(systemSettings?.platform_fee || 0).toFixed(2)}</Text></View><TextInput keyboardType="numeric" value={String(systemSettings?.platform_fee || 0)} onChangeText={(val) => setSystemSettings({ ...systemSettings, platform_fee: val })} onBlur={() => handleUserAction(null, 'update_settings', { platform_fee: systemSettings?.platform_fee })} style={{ backgroundColor: "#F1F5F9", padding: 12, borderRadius: 10, fontSize: 15, fontWeight: "600" }} /></View>
-                      <TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/match-config`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.token}` }, body: JSON.stringify({ radius: systemSettings?.match_radius, fee: systemSettings?.platform_fee }) }).then(res => res.ok ? alert('Engine updated') : alert('Update failed')); }} style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "800" }}>PUSH ENGINE RELOAD</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/match-config`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.token}` }, body: JSON.stringify({ radius: systemSettings?.match_radius, fee: systemSettings?.platform_fee }) }).then(res => res.ok ? showAlert('Engine updated') : showAlert('Update failed')); }} style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "800" }}>PUSH ENGINE RELOAD</Text></TouchableOpacity>
                     </View>
                     <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 16, marginTop: 16 }}><View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Text style={{ fontSize: 14, fontWeight: "700", color: "#1E293B" }}>System Maintenance Mode</Text><TouchableOpacity onPress={() => { const newVal = !systemSettings?.maintenance_mode; setSystemSettings({ ...systemSettings, maintenance_mode: newVal }); handleUserAction(null, 'update_settings', { maintenance_mode: newVal }); }} style={{ width: 56, height: 30, borderRadius: 15, backgroundColor: systemSettings?.maintenance_mode ? "#EF4444" : "#E2E8F0", padding: 3, flexDirection: systemSettings?.maintenance_mode ? 'row-reverse' : 'row' }}><View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#fff" }} /></TouchableOpacity></View></View>
                   </View>
@@ -2266,6 +2266,9 @@ function AdminScreen({ onNavigate, onLogout, user }) {
   );
 }
 export default function App() {
+  const [customAlert, setCustomAlert] = useState({ visible: false, message: "" });
+  const showAlert = (message) => setCustomAlert({ visible: true, message });
+
   const [screen, setScreen] = useState("home");
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -2338,21 +2341,21 @@ export default function App() {
         setScreen('admin');
         setOnboardingComplete(true);
       }
-      return <AdminAuthScreen onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />;
+      return <AdminAuthScreen showAlert={showAlert} onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />;
     }
 
     // Role-based Access Guard for Admin Screen
     if (screen === "admin" && (!user?.roles?.includes('admin') || currentUser !== 'admin')) {
-      alert("Unauthorized access attempt.");
+      showAlert("Unauthorized access attempt.");
       handleLogout();
-      return <AuthScreen onAuth={handleAuth} />;
+      return <AuthScreen showAlert={showAlert} onAuth={handleAuth} />;
     }
 
     if (!isAuthenticated) {
-      return <AuthScreen onAuth={handleAuth} />;
+      return <AuthScreen showAlert={showAlert} onAuth={handleAuth} />;
     }
     if (!currentUser) {
-      return <RoleSelectionScreen onSelectRole={async (role) => {
+      return <RoleSelectionScreen showAlert={showAlert} onSelectRole={async (role) => {
         // Optimistic UI update
         setCurrentUser(role);
         if (role === "customer") setOnboardingComplete(true);
@@ -2364,7 +2367,7 @@ export default function App() {
     }
 
     if (currentUser === "provider" && !onboardingComplete) {
-      return <ProviderOnboardingScreen user={user} onComplete={(details) => {
+      return <ProviderOnboardingScreen user={user} showAlert={showAlert} onComplete={(details) => {
         setUser({ ...user, ...details });
         setOnboardingComplete(true);
       }} />;
@@ -2373,30 +2376,30 @@ export default function App() {
     switch (screen) {
       case "home":
         return <HomeScreen
-          onNavigate={navigate}
+          onNavigate={navigate} showAlert={showAlert}
           currentUser={currentUser}
 
-          user={user}
+          user={user} showAlert={showAlert}
           onUpdateUser={(updated) => setUser(updated)}
         />;
       case "workerDetail":
-        return <WorkerDetailScreen worker={screenData} onNavigate={navigate} />;
+        return <WorkerDetailScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} />;
       case "createBooking":
-        return <CreateBookingScreen worker={screenData} onNavigate={navigate} user={user} />;
+        return <CreateBookingScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} user={user} showAlert={showAlert} />;
       case "booking":
-        return <BookingsScreen onNavigate={navigate} user={user} currentUser={currentUser} />;
+        return <BookingsScreen onNavigate={navigate} showAlert={showAlert} user={user} showAlert={showAlert} currentUser={currentUser} />;
       case "trust":
-        return <TrustScreen onNavigate={navigate} />;
+        return <TrustScreen onNavigate={navigate} showAlert={showAlert} />;
       case "admin":
-        return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} />;
+        return <AdminScreen onNavigate={navigate} showAlert={showAlert} onLogout={handleLogout} showAlert={showAlert} user={user} showAlert={showAlert} />;
       case "profile":
         return (
           <ProfileScreen
-            onNavigate={navigate}
+            onNavigate={navigate} showAlert={showAlert}
             currentUser={currentUser}
 
-            onLogout={handleLogout}
-            user={user}
+            onLogout={handleLogout} showAlert={showAlert}
+            user={user} showAlert={showAlert}
             onUpdateUser={(updated) => setUser(updated)}
           />
         );
@@ -2416,10 +2419,10 @@ export default function App() {
         );
       default:
         return <HomeScreen
-          onNavigate={navigate}
+          onNavigate={navigate} showAlert={showAlert}
           currentUser={currentUser}
 
-          user={user}
+          user={user} showAlert={showAlert}
           onUpdateUser={(updated) => setUser(updated)}
         />;
     }
@@ -2481,6 +2484,21 @@ export default function App() {
           />
         )}
       </View>
+
+      {customAlert.visible && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 1000 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 20, padding: 24, maxWidth: 350, width: '100%', elevation: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: '#0B5932', marginBottom: 8, textAlign: 'center' }}>WANTOK WORKFORCE</Text>
+            <Text style={{ fontSize: 14, color: '#4B5563', marginBottom: 24, textAlign: 'center', lineHeight: 20 }}>{customAlert.message}</Text>
+            <TouchableOpacity
+              onPress={() => setCustomAlert({ visible: false, message: "" })}
+              style={{ backgroundColor: '#0B5932', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
