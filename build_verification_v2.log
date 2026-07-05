@@ -2,24 +2,24 @@
 > wantok-workforce@1.0.1 build
 > NODE_OPTIONS="--max-old-space-size=2048" npx expo export
 
-(node:30772) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(node:1186173) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 Starting Metro Bundler
-Web Bundled 30021ms (node_modules/expo/AppEntry.js)
-iOS Bundled 33558ms (node_modules/expo/AppEntry.js)
-Android Bundled 36387ms (node_modules/expo/AppEntry.js)
+Web Bundled 7535ms (node_modules/expo/AppEntry.js)
+Android Bundled 13875ms (node_modules/expo/AppEntry.js)
+iOS Bundled 16450ms (node_modules/expo/AppEntry.js)
 
 Exporting 1 asset:
 assets/brand_logo.jpg (61.4 kB)
 
 Exporting 1 bundle for ios:
-_expo/static/js/ios/AppEntry-f787e0fb84c396b4782b70f0b9a1c7e3.hbc (1.6 MB)
+_expo/static/js/ios/AppEntry-21eafe165de2bc0a937b7b8870c94ea4.hbc (1.62 MB)
 
 Exporting 1 bundle for android:
-_expo/static/js/android/AppEntry-ccf8075bca9a9337cc26af6428b571f2.hbc (1.61 MB)
+_expo/static/js/android/AppEntry-55fd0f5c02f43b730223eaec2ecef9e6.hbc (1.63 MB)
 
 Exporting 1 bundle for web:
-_expo/static/js/web/AppEntry-4d4d06634fbaaaa9361d517c5807f5d8.js (415 kB)
+_expo/static/js/web/AppEntry-c5a7eb17a8d18d1309c6bc063b95c8f0.js (436 kB)
 
 Exporting 4 files:
 assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg (61.4 kB)
