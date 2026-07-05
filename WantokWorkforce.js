@@ -232,10 +232,26 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
     const lat = -9.4438;
     const lon = 147.1803;
 
+    const CATEGORY_SYNONYMS = {
+      legal: ["legal", "law", "lawyer", "attorney", "solicitor", "lawyers", "prosecutions"],
+      automotive: ["automotive", "car", "mechanic", "repair", "garage"]
+    };
+
+    const query = selectedCategory || searchText;
+    const sanitizedInput = (query || "").toLowerCase().trim();
+
+    let targetCategory = sanitizedInput;
+    for (const [officialCategory, synonyms] of Object.entries(CATEGORY_SYNONYMS)) {
+      if (synonyms.includes(sanitizedInput) || officialCategory === sanitizedInput) {
+        targetCategory = officialCategory;
+        break;
+      }
+    }
+
     try {
-      const url = `${API_BASE}/match/nearby?latitude=${lat}&longitude=${lon}${(selectedCategory || searchText) ? '&trade_category=' + encodeURIComponent(selectedCategory || searchText) : ''}`;
+      const url = `${API_BASE}/match/nearby?latitude=${lat}&longitude=${lon}${targetCategory ? "&trade_category=" + encodeURIComponent(targetCategory) : ""}`;
       const response = await fetch(url);
-      const data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
+      const data = await response.json().catch(() => ({ error: "Invalid response from server" }));
 
       if (response.ok) {
         setNearbyWorkers(data.workers || []);
@@ -249,7 +265,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
       setIsSearching(false);
     }
   };
-
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
     try {
