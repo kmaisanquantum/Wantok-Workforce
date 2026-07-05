@@ -41,6 +41,19 @@ const COLORS = {
   statusBar: "#0F4024",
 };
 
+const ResponsiveContainer = ({ children }) => (
+  <View style={{ width: "100%", maxWidth: MAX_WIDTH, alignSelf: "center", paddingHorizontal: CONTENT_PADDING }}>
+    {children}
+  </View>
+);
+
+const NAV_ITEMS = [
+  { key: "home", label: "Home", icon: "🏠" },
+  { key: "booking", label: "Bookings", icon: "📅" },
+  { key: "trust", label: "Trust", icon: "🛡️" },
+  { key: "profile", label: "Profile", icon: "👤" },
+];
+
 const StarRating = ({ rating }) => {
   const stars = Math.round(rating);
   return (
@@ -169,11 +182,11 @@ function ProviderFinancialDashboard({ user }) {
             <View key={job.id} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, borderLeftWidth: 6, borderLeftColor: COLORS.primary }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <View>
-                  <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.text }}>{job.service_type}</Text>
-                  <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>Client: {job.customer_name}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.text }}>{job?.service_type}</Text>
+                  <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>Client: {job?.customer_name}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 20, fontWeight: "900", color: COLORS.primary }}>K{Number(job.price).toFixed(2)}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: "900", color: COLORS.primary }}>K{Number(job?.price).toFixed(2)}</Text>
                   <Text style={{ fontSize: 10, color: COLORS.textLight, textAlign: 'right' }}>{new Date(job.completed_at || Date.now()).toLocaleDateString()}</Text>
                 </View>
               </View>
@@ -196,11 +209,23 @@ function ProviderFinancialDashboard({ user }) {
 }
 
 function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
+  // Hooks MUST be at the top level
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [filtered, setFiltered] = useState([]);
   const [nearbyWorkers, setNearbyWorkers] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Provider specific states
+  const [vStatus, setVStatus] = useState({ verified: false, vouch_status: 'none' });
+  const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    primary_skill: user?.primary_skill || '',
+    skills_specialization: '',
+    years_experience: '',
+    hourly_rate: user?.hourly_rate?.toString() || '',
+    operating_location: user?.location_name || ''
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchNearbyProviders = async () => {
     setIsSearching(true);
@@ -213,7 +238,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
       const data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
 
       if (response.ok) {
-        setNearbyWorkers(data.workers);
+        setNearbyWorkers(data.workers || []);
       } else {
         alert(data.error || "Matching engine failed.");
       }
@@ -224,26 +249,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
       setIsSearching(false);
     }
   };
-
-  useEffect(() => {
-    if (!searchText && !selectedCategory) {
-      setFiltered([]);
-      setNearbyWorkers([]);
-      return;
-    }
-  }, [searchText, selectedCategory]);
-
-  if (currentUser === "provider") {
-      const [vStatus, setVStatus] = useState({ verified: false, vouch_status: 'none' });
-  const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    primary_skill: user?.primary_skill || '',
-    skills_specialization: '',
-    years_experience: '',
-    hourly_rate: user?.hourly_rate?.toString() || '',
-    operating_location: user?.location_name || ''
-  });
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
@@ -256,7 +261,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
         },
         body: JSON.stringify(profileForm)
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         alert("Profile updated successfully!");
         setIsUpdateModalVisible(false);
@@ -272,27 +277,45 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
   };
 
   const fetchVerification = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/v1/providers/verification-status`, {
-          headers: { 'Authorization': `Bearer ${user?.token}` }
-        });
-        const data = await res.json();
-        if (data.success) setVStatus(data);
-      } catch (err) {}
-    };
-    useEffect(() => { fetchVerification(); }, []);
+    if (currentUser !== 'provider') return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/providers/verification-status`, {
+        headers: { 'Authorization': `Bearer ${user?.token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.success) setVStatus(data);
+    } catch (err) {}
+  };
 
+  useEffect(() => {
+    if (currentUser === 'provider') fetchVerification();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!searchText && !selectedCategory) {
+      setNearbyWorkers([]);
+    }
+  }, [searchText, selectedCategory]);
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: COLORS.textMuted }}>Initializing secure session...</Text>
+      </View>
+    );
+  }
+
+  if (currentUser === "provider") {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: "center" }}>
           <View style={{ maxWidth: MAX_WIDTH, width: "100%", paddingHorizontal: CONTENT_PADDING }}>
           <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} style={{ padding: 24, paddingBottom: 40 }}>
-
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>Welcome Back, Provider</Text>
-                    {vStatus.verified && (
+                    {vStatus?.verified && (
                       <View style={{ backgroundColor: COLORS.accent, borderRadius: 4, paddingHorizontal: 4 }}>
                         <Text style={{ fontSize: 9, fontWeight: "900", color: "#fff" }}>VERIFIED</Text>
                       </View>
@@ -304,11 +327,9 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
                   <Text style={{ fontSize: 24 }}>🔧</Text>
                 </TouchableOpacity>
               </View>
-
           </LinearGradient>
 
             <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
-              {/* Left Column: Work Status & Financial Ledger */}
               <View style={{ flex: isDesktop ? 2 : 1, gap: 16 }}>
                 <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, elevation: 4 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -335,20 +356,19 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
                   <View style={{ height: 1, backgroundColor: COLORS.border, marginBottom: 16 }} />
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <Text style={{ fontSize: 14, fontWeight: "700", color: COLORS.text }}>Trust Score</Text>
-                    <Text style={{ fontSize: 16, fontWeight: "900", color: COLORS.primary }}>{vStatus.verified ? "98%" : "92%"}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "900", color: COLORS.primary }}>{vStatus?.verified ? "98%" : "92%"}</Text>
                   </View>
-                  <View style={{ height: 6, backgroundColor: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}><View style={{ width: vStatus.verified ? "98%" : "92%", height: "100%", backgroundColor: COLORS.primary }} /></View>
+                  <View style={{ height: 6, backgroundColor: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}><View style={{ width: vStatus?.verified ? "98%" : "92%", height: "100%", backgroundColor: COLORS.primary }} /></View>
                 </View>
 
                 <ProviderFinancialDashboard user={user} />
               </View>
 
-              {/* Right Column: Vouching & Tools */}
               <View style={{ flex: isDesktop ? 1 : 1, gap: 16 }}>
-                {!vStatus.verified && vStatus.vouch_status !== "pending" && (
+                {!vStatus?.verified && vStatus?.vouch_status !== "pending" && (
                   <ProviderVouchingForm user={user} onVouchSubmitted={fetchVerification} />
                 )}
-                {vStatus.vouch_status === "pending" && (
+                {vStatus?.vouch_status === "pending" && (
                   <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, alignItems: "center", borderStyle: "dashed", borderWidth: 1, borderColor: COLORS.primary }}>
                     <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.primary }}>⏳ Verification Pending</Text>
                     <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4, textAlign: "center" }}>Your community gatekeeper request is being reviewed by the Wantok team.</Text>
@@ -369,7 +389,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
           </View>
         </ScrollView>
-        {/* Provider Profile Update Modal */}
         <Modal visible={isUpdateModalVisible} animationType="slide" transparent={true}>
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', borderRadius: 24, width: '100%', maxWidth: 500, padding: 24, maxHeight: '90%' }}>
@@ -454,7 +473,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             </View>
           </View>
         </Modal>
-
       </View>
     );
   }
@@ -475,60 +493,36 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             </View>
             <View style={{ backgroundColor: "#fff", borderRadius: 14, paddingVertical: 8, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 10, elevation: 4 }}>
               <Text style={{ fontSize: 18 }}>🔍</Text>
-              <TextInput value={searchText} onChangeText={setSearchText} placeholder="Search trade or category..." placeholderTextColor={COLORS.textLight} style={{ flex: 1, fontSize: 14, color: COLORS.text, padding: 0 }} />
-              <View style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 }}><Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>📍 PNG</Text></View>
+              <TextInput value={searchText} onChangeText={setSearchText} placeholder="Search trade or category..." placeholderTextColor={COLORS.textLight} style={{ flex: 1, fontSize: 14, color: COLORS.text, padding: 0 }} onSubmitEditing={fetchNearbyProviders} />
+              <TouchableOpacity onPress={fetchNearbyProviders} style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 10 }}><Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Search</Text></TouchableOpacity>
             </View>
           </ResponsiveContainer>
         </LinearGradient>
 
-
-        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-          <TouchableOpacity onPress={fetchNearbyProviders}>
-            <Text style={{ color: COLORS.primary, fontWeight: '700', fontSize: 16 }}>Tap here to view search results</Text>
-          </TouchableOpacity>
-        </View>
-
-        {nearbyWorkers.length > 0 && (
+        <ResponsiveContainer>
           <View style={{ paddingVertical: 20 }}>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>Search Results</Text>
-            <View style={{ backgroundColor: "#fff", borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: COLORS.border }}>
-              {/* Table Header */}
-              <View style={{ flexDirection: "row", backgroundColor: "#F9FAFB", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-                <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>NAME</Text>
-                <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>ROLE</Text>
-                <Text style={{ flex: 2, fontWeight: "700", fontSize: 12, color: COLORS.textMuted }}>LOCATION</Text>
-                <Text style={{ flex: 1, fontWeight: "700", fontSize: 12, color: COLORS.textMuted, textAlign: "right" }}>RATE</Text>
+            {isSearching ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.textMuted }}>Searching for nearby providers...</Text>
               </View>
-              {/* Table Body */}
-              {nearbyWorkers?.map((worker, index) => (
-                <TouchableOpacity
-                  key={worker.id}
-                  onPress={() => onNavigate("workerDetail", worker)}
-                  style={{
-                    flexDirection: "row",
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    borderBottomWidth: index === nearbyWorkers.length - 1 ? 0 : 1,
-                    borderBottomColor: COLORS.border,
-                    alignItems: "center"
-                  }}
-                >
-                  <Text style={{ flex: 2, fontSize: 13, fontWeight: "600", color: COLORS.text }}>{worker.name}</Text>
-                  <Text style={{ flex: 2, fontSize: 13, color: COLORS.textMuted }}>{worker.trade || "Provider"}</Text>
-                  <Text style={{ flex: 2, fontSize: 12, color: COLORS.textMuted }}>{worker.operating_location || "N/A"}</Text>
-                  <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: COLORS.primary, textAlign: "right" }}>K{worker.hourly_rate || "0"}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            ) : nearbyWorkers?.length > 0 ? (
+              <View style={{ gap: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 }}>Search Results</Text>
+                {nearbyWorkers?.map((worker) => (
+                  <WorkerCard key={worker?.id || Math.random()} worker={worker} onPress={() => onNavigate("workerDetail", worker)} />
+                ))}
+              </View>
+            ) : (searchText) ? (
+              <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed' }}>
+                <Text style={{ color: COLORS.textMuted }}>No results found.</Text>
+              </View>
+            ) : null}
           </View>
-        )}
-
+        </ResponsiveContainer>
       </ScrollView>
     </View>
   );
-}
-
-function AdminNavigationShell({ renderScreen }) {
+}\nfunction AdminNavigationShell({ renderScreen }) {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>{renderScreen()}</View>
@@ -796,10 +790,15 @@ function BookingsScreen({ onNavigate, user, currentUser }) {
       const res = await fetch(`${API_BASE}/bookings/list`, {
         headers: { "Authorization": `Bearer ${user?.token}` }
       });
-      const data = await res.json();
-      if (data.success) setBookings(data.bookings || []);
+      const data = await res.json().catch(() => ({}));
+      if (data.success && Array.isArray(data.bookings)) {
+        setBookings(data.bookings);
+      } else {
+        setBookings([]);
+      }
     } catch (e) {
       console.error("Fetch bookings failed", e);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -841,44 +840,44 @@ function BookingsScreen({ onNavigate, user, currentUser }) {
         </LinearGradient>
 
         <View style={{ padding: 16, gap: 12 }}>
-          {bookings.length === 0 ? (
+          {(!bookings || bookings.length === 0) ? (
             <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16 }}>
               <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center' }}>No bookings found.</Text>
             </View>
-          ) : bookings?.map((b) => {
+          ) : bookings?.map((b, idx) => {
             const isCustomer = currentUser === 'customer';
             const isProvider = currentUser === 'provider';
 
             return (
-              <View key={b.id} style={{ backgroundColor: "#fff", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border }}>
+              <View key={b?.id || idx} style={{ backgroundColor: "#fff", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                  <Text style={{ fontWeight: "700", fontSize: 15, color: COLORS.text }}>{b.service_type}</Text>
-                  <Text style={{ fontWeight: "700", fontSize: 14, color: COLORS.primary }}>K{b.price}</Text>
+                  <Text style={{ fontWeight: "700", fontSize: 15, color: COLORS.text }}>{b?.service_type}</Text>
+                  <Text style={{ fontWeight: "700", fontSize: 14, color: COLORS.primary }}>K{b?.price}</Text>
                 </View>
                 <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 13, color: COLORS.textMuted }}>{isCustomer ? `Provider: ${b.provider_name || 'Unassigned'}` : `Customer: ${b.customer_name}`}</Text>
-                  <Text style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 2 }}>Status: {(b.status || "").toUpperCase()}</Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textMuted }}>{isCustomer ? `Provider: ${b?.provider_name || 'Unassigned'}` : `Customer: ${b?.customer_name}`}</Text>
+                  <Text style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 2 }}>Status: {(b?.status || "").toUpperCase()}</Text>
                 </View>
 
                 {/* Actions based on State Machine */}
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {b.status === 'pending' && isProvider && (
-                    <TouchableOpacity onPress={() => handleAction(b.id, 'accept')} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
+                  {b?.status === 'pending' && isProvider && (
+                    <TouchableOpacity onPress={() => handleAction(b?.id, 'accept')} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Accept Job</Text>
                     </TouchableOpacity>
                   )}
-                  {b.status === 'accepted' && isCustomer && (
-                    <TouchableOpacity onPress={() => handleAction(b.id, 'escrow')} style={{ backgroundColor: '#1E293B', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
+                  {b?.status === 'accepted' && isCustomer && (
+                    <TouchableOpacity onPress={() => handleAction(b?.id, 'escrow')} style={{ backgroundColor: '#1E293B', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Confirm & Pay (Escrow)</Text>
                     </TouchableOpacity>
                   )}
-                  {b.status === 'in_progress' && isProvider && (
-                    <TouchableOpacity onPress={() => handleAction(b.id, 'complete')} style={{ backgroundColor: COLORS.secondary, padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
+                  {b?.status === 'in_progress' && isProvider && (
+                    <TouchableOpacity onPress={() => handleAction(b?.id, 'complete')} style={{ backgroundColor: COLORS.secondary, padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Mark as Completed</Text>
                     </TouchableOpacity>
                   )}
-                  {b.status === 'completed_awaiting_approval' && isCustomer && (
-                    <TouchableOpacity onPress={() => handleAction(b.id, 'approve')} style={{ backgroundColor: '#059669', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
+                  {b?.status === 'completed_awaiting_approval' && isCustomer && (
+                    <TouchableOpacity onPress={() => handleAction(b?.id, 'approve')} style={{ backgroundColor: '#059669', padding: 8, borderRadius: 8, flex: 1, alignItems: 'center' }}>
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Approve & Release Funds</Text>
                     </TouchableOpacity>
                   )}
@@ -1915,9 +1914,9 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                           </View>
                           {disputedJobs?.map(job => (
                             <View key={job.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-                              <Text style={{ width: 150, fontSize: 13 }}>{job.service_type}</Text>
-                              <Text style={{ width: 120, fontSize: 13, color: "#64748B" }}>{job.customer_name}</Text>
-                              <Text style={{ width: 100, fontSize: 13, fontWeight: "700", textAlign: "right" }}>K{job.price}</Text>
+                              <Text style={{ width: 150, fontSize: 13 }}>{job?.service_type}</Text>
+                              <Text style={{ width: 120, fontSize: 13, color: "#64748B" }}>{job?.customer_name}</Text>
+                              <Text style={{ width: 100, fontSize: 13, fontWeight: "700", textAlign: "right" }}>K{job?.price}</Text>
                               <View style={{ width: 150, flexDirection: "row", justifyContent: "center", gap: 8 }}>
                                 <TouchableOpacity onPress={() => handleUserAction(job.id, "release_payout")} style={{ backgroundColor: "#10B981", padding: 6, borderRadius: 4 }}><Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>RELEASE</Text></TouchableOpacity>
                                 <TouchableOpacity onPress={() => handleUserAction(job.id, "refund_escrow")} style={{ backgroundColor: "#EF4444", padding: 6, borderRadius: 4 }}><Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>REFUND</Text></TouchableOpacity>
