@@ -1,0 +1,12 @@
+
+> wantok-workforce@1.0.1 build
+> NODE_OPTIONS="--max-old-space-size=2048" npx expo export
+
+npm warn exec The following package was not found and will be installed: expo@57.0.2
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+ConfigError: Cannot determine the project's Expo SDK version because the module `expo` is not installed. Install it with `npm install expo` and try again.
+npm notice
+npm notice New minor version of npm available! 11.11.0 -> 11.18.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.18.0
+npm notice To update run: npm install -g npm@11.18.0
+npm notice
