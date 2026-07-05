@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: frontend_verify.spec.js >> frontend build renders and displays status
-- Location: frontend_verify.spec.js:4:1
+- Name: verify_frontend.spec.js >> Check if frontend builds and has basic structure
+- Location: verify_frontend.spec.js:4:1
 
 # Error details
 
