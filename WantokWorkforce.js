@@ -2706,6 +2706,7 @@ function ProviderInboxScreen({ user, showAlert }) {
 export default function App() {
   const [customAlert, setCustomAlert] = useState({ visible: false, message: '' });
   const showAlert = (message) => setCustomAlert({ visible: true, message });
+  const [workers, setWorkers] = useState([]);
 
   const [screen, setScreen] = useState("home");
   const [user, setUser] = useState(null);
@@ -2772,9 +2773,7 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    if (typeof workers !== 'undefined' && !workers) {
-      return <div className="p-6 text-center text-gray-500">Loading Wantok Workforce...</div>;
-    }
+
 
     // Hidden Admin Route Handling
     if (screen === "admin-auth") {
@@ -2875,6 +2874,17 @@ export default function App() {
   const activeNav = ["home", "trust", "booking", "profile", "active_jobs", "earnings"].includes(screen)
     ? screen
     : "home";
+
+
+  if (!workers || !Array.isArray(workers)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-gray-500 font-medium">Loading Wantok Workforce profiles safely...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.statusBar }}>
