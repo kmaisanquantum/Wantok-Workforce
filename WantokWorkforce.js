@@ -229,34 +229,72 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
   const fetchNearbyProviders = async () => {
     setIsSearching(true);
+
+    const SYNONYM_EXTENSIONS = {
+      'law': 'Legal',
+      'lawyer': 'Legal',
+      'lawyers': 'Legal',
+      'fintech': 'FinTech',
+      'finance': 'FinTech',
+      'agritech': 'AgriTech',
+      'agriculture': 'AgriTech'
+    };
+
     try {
-      // Update the API endpoint to use a global keyword search query
-      const cleanQuery = (searchText || '').trim();
-      const url = `${API_BASE}/match/nearby?keyword=${encodeURIComponent(cleanQuery)}`;
+      // Fetch the full list of providers
+      const url = `${API_BASE}/match/nearby`;
       const response = await fetch(url);
       const data = await response.json().catch(() => ({ error: "Invalid response from server" }));
+      const workers = data.workers || [];
 
       if (response.ok) {
-        const queryLower = cleanQuery.toLowerCase();
-        const allWorkers = data.workers || [];
+        const rawInput = (searchText || '').trim();
+        const normalizedInput = rawInput.toLowerCase();
 
-        const fullyOpenResults = allWorkers.filter(worker => {
-          if (!queryLower) return true; // Show all if search input is empty
+        if (!rawInput) {
+          setNearbyWorkers(workers);
+        } else {
+          // Standardize search criteria with synonym roots
+          const extendedKeyword = SYNONYM_EXTENSIONS[normalizedInput]
+            ? `${rawInput} ${SYNONYM_EXTENSIONS[normalizedInput]}`
+            : rawInput;
 
-          const matchTitle = (worker.role || '').toLowerCase().includes(queryLower);
-          const matchName = (worker.name || '').toLowerCase().includes(queryLower);
-          const matchBio = (worker.bio || '').toLowerCase().includes(queryLower);
-          const matchCategory = (worker.category || '').toLowerCase().includes(queryLower);
+          const finalQuery = extendedKeyword.toLowerCase();
 
-          // Check skills array if it exists
-          const matchSkills = worker.skills && Array.isArray(worker.skills) && worker.skills.some(skill =>
-            skill.toLowerCase().includes(queryLower)
-          );
+          // Scoring-based fuzzy matching loop
+          const fuzzyResults = workers.filter(worker => {
+            const searchTargetText = [
+              worker.name,
+              worker.role,
+              worker.bio,
+              worker.category,
+              ...(worker.skills || [])
+            ].join(' ').toLowerCase();
 
-          return matchTitle || matchName || matchBio || matchCategory || matchSkills;
-        });
+            // Standard sub-string index check
+            if (searchTargetText.includes(finalQuery)) return true;
 
-        setNearbyWorkers(fullyOpenResults);
+            // Simple Levenshtein distance / typo handling hook for broken words
+            const words = finalQuery.split(/\s+/);
+            return words.every(word => {
+              if (word.length < 3) return searchTargetText.includes(word);
+
+              // Returns true if a keyword segment closely matches a chunk of profile text
+              return searchTargetText.split(/\s+/).some(targetWord => {
+                if (targetWord.includes(word) || word.includes(targetWord)) return true;
+
+                // Fallback for single character typos (e.g., 'eletric' vs 'electric')
+                let distance = 0;
+                for (let i = 0; i < Math.min(word.length, targetWord.length); i++) {
+                  if (word[i] !== targetWord[i]) distance++;
+                }
+                return distance <= 1 && Math.abs(word.length - targetWord.length) <= 1;
+              });
+            });
+          });
+
+          setNearbyWorkers(fuzzyResults);
+        }
       } else {
         setNearbyWorkers([]);
       }
