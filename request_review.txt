@@ -1,10 +1,8 @@
-I have updated WantokWorkforce.js to implement synonym mapping in the fetchNearbyProviders function.
+I have completely removed the category restriction logic from the Customer Module search.
 
-Key changes:
-- Defined CATEGORY_SYNONYMS for 'legal' and 'automotive'.
-- Normalized search input (selectedCategory || searchText).
-- Resolved targetCategory based on synonyms.
-- Updated API fetch URL to use targetCategory.
-- Preserved existing UI state handling and error alerts.
+Changes:
+1. WantokWorkforce.js: Removed CATEGORY_SYNONYMS and updated fetchNearbyProviders to use the generic 'search' parameter.
+2. match_controller.js: Removed categorySynonyms and normalizeSearchTrade. Updated getNearbyWorkers to handle the 'search' parameter and pass it to the service.
+3. match_service.js: Expanded textSearchWorkers and findNearbyWorkers to include 'role' and 'bio' in the search filters, allowing for a broad text match across all worker fields.
 
-Please review the implementation in WantokWorkforce.js around line 230.
+Verified the build remains clean and the code is syntactically correct.
