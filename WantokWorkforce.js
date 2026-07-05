@@ -241,7 +241,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
     };
 
     try {
-      // Fetch the full list of providers
+      // Fetch base providers list safely
       const url = `${API_BASE}/match/nearby`;
       const response = await fetch(url);
       const data = await response.json().catch(() => ({ error: "Invalid response from server" }));
@@ -251,17 +251,17 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
         const rawInput = (searchText || '').trim();
         const normalizedInput = rawInput.toLowerCase();
 
+        // Standardize search criteria: Append synonym root if matched
+        const extendedKeyword = SYNONYM_EXTENSIONS[normalizedInput]
+          ? `${rawInput} ${SYNONYM_EXTENSIONS[normalizedInput]}`
+          : rawInput;
+
+        const finalQuery = extendedKeyword.toLowerCase();
+
         if (!rawInput) {
           setNearbyWorkers(workers);
         } else {
-          // Standardize search criteria with synonym roots
-          const extendedKeyword = SYNONYM_EXTENSIONS[normalizedInput]
-            ? `${rawInput} ${SYNONYM_EXTENSIONS[normalizedInput]}`
-            : rawInput;
-
-          const finalQuery = extendedKeyword.toLowerCase();
-
-          // Scoring-based fuzzy matching loop
+          // Implement lightweight, scoring-based fuzzy matching loop
           const fuzzyResults = workers.filter(worker => {
             const searchTargetText = [
               worker.name,
@@ -278,11 +278,9 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             const words = finalQuery.split(/\s+/);
             return words.every(word => {
               if (word.length < 3) return searchTargetText.includes(word);
-
-              // Returns true if a keyword segment closely matches a chunk of profile text
+              // Returns true if a keyword segment closely matches a chunk of the profile text
               return searchTargetText.split(/\s+/).some(targetWord => {
                 if (targetWord.includes(word) || word.includes(targetWord)) return true;
-
                 // Fallback for single character typos (e.g., 'eletric' vs 'electric')
                 let distance = 0;
                 for (let i = 0; i < Math.min(word.length, targetWord.length); i++) {
