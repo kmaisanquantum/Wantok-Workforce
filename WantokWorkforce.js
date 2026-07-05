@@ -179,7 +179,7 @@ function ProviderFinancialDashboard({ user }) {
       ) : (
         <View style={{ gap: 12 }}>
           {ledger?.history?.map((job) => (
-            <View key={job.id} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, borderLeftWidth: 6, borderLeftColor: COLORS.primary }}>
+            <View key={job?.id || Math.random()} style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, borderLeftWidth: 6, borderLeftColor: COLORS.primary }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <View>
                   <Text style={{ fontSize: 16, fontWeight: "800", color: COLORS.text }}>{job?.service_type}</Text>
@@ -187,14 +187,14 @@ function ProviderFinancialDashboard({ user }) {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={{ fontSize: 20, fontWeight: "900", color: COLORS.primary }}>K{Number(job?.price).toFixed(2)}</Text>
-                  <Text style={{ fontSize: 10, color: COLORS.textLight, textAlign: 'right' }}>{new Date(job.completed_at || Date.now()).toLocaleDateString()}</Text>
+                  <Text style={{ fontSize: 10, color: COLORS.textLight, textAlign: 'right' }}>{new Date(job?.completed_at || Date.now()).toLocaleDateString()}</Text>
                 </View>
               </View>
               <View style={{ height: 1, backgroundColor: COLORS.border, marginBottom: 12 }} />
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Text style={{ fontSize: 14 }}>⭐</Text>
-                  <Text style={{ fontWeight: "700", color: COLORS.accent }}>{job.feedback_rating || 5.0} Rating</Text>
+                  <Text style={{ fontWeight: "700", color: COLORS.accent }}>{job?.feedback_rating || 5.0} Rating</Text>
                 </View>
                 <View style={{ backgroundColor: "#F0FDF4", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
                   <Text style={{ fontSize: 10, fontWeight: "800", color: "#166534" }}>VERIFIED RECORD</Text>
@@ -551,11 +551,11 @@ function ProviderNavigationShell({ renderScreen, navigate, activeNav, onboarding
             { key: "booking", label: "Jobs", icon: "🔧" },
             { key: "profile", label: "Account", icon: "👤" },
           ].map((item) => {
-            const isActive = activeNav === item.key;
+            const isActive = activeNav === item?.key;
             return (
               <TouchableOpacity
-                key={item.key}
-                onPress={() => navigate(item.key)}
+                key={item?.key}
+                onPress={() => navigate(item?.key)}
                 style={{
                   flex: 1,
                   alignItems: "center",
@@ -565,9 +565,9 @@ function ProviderNavigationShell({ renderScreen, navigate, activeNav, onboarding
                 }}
               >
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: isActive ? "#F0FDF4" : "transparent", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                  <Text style={{ fontSize: 20 }}>{item?.icon}</Text>
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: isActive ? "800" : "500", color: isActive ? COLORS.primary : COLORS.textMuted }}>{item.label}</Text>
+                <Text style={{ fontSize: 10, fontWeight: isActive ? "800" : "500", color: isActive ? COLORS.primary : COLORS.textMuted }}>{item?.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -594,11 +594,11 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
           }}
         >
           {NAV_ITEMS?.map((item) => {
-            const isActive = activeNav === item.key;
+            const isActive = activeNav === item?.key;
             return (
               <TouchableOpacity
-                key={item.key}
-                onPress={() => navigate(item.key)}
+                key={item?.key}
+                onPress={() => navigate(item?.key)}
                 style={{
                   flex: 1,
                   alignItems: "center",
@@ -617,7 +617,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                  <Text style={{ fontSize: 20 }}>{item?.icon}</Text>
                 </View>
                 <Text
                   style={{
@@ -626,7 +626,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
                     color: isActive ? COLORS.primary : COLORS.textMuted,
                   }}
                 >
-                  {item.label}
+                  {item?.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -708,7 +708,7 @@ function TrustScreen({ onNavigate }) {
             Worker Trust Scores
           </Text>
 
-          {workers.map((w) => (
+          {workers?.map((w) => (
             <View
               key={w.id}
               style={{
@@ -1871,7 +1871,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
             { id: "logs", label: "Logs", icon: "📜" },
             { id: "settings", label: "Controls", icon: "🎛️" },
           ].map((tab) => (
-            <TouchableOpacity key={tab.id} onPress={() => setActiveTab(tab.id)} style={{ flex: 1, paddingVertical: 14, alignItems: "center", borderBottomWidth: 3, borderBottomColor: activeTab === tab.id ? COLORS.primary : "transparent" }}>
+            <TouchableOpacity key={tab?.id} onPress={() => setActiveTab(tab.id)} style={{ flex: 1, paddingVertical: 14, alignItems: "center", borderBottomWidth: 3, borderBottomColor: activeTab === tab.id ? COLORS.primary : "transparent" }}>
               <Text style={{ fontSize: 16, marginBottom: 2 }}>{tab.icon}</Text>
               <Text style={{ fontSize: 11, fontWeight: "700", color: activeTab === tab.id ? COLORS.primary : "#64748B" }}>{tab.label.toUpperCase()}</Text>
             </TouchableOpacity>
@@ -1913,7 +1913,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                             <Text style={{ width: 150, fontWeight: "700", fontSize: 12, textAlign: "center" }}>ACTIONS</Text>
                           </View>
                           {disputedJobs?.map(job => (
-                            <View key={job.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                            <View key={job?.id || Math.random()} style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
                               <Text style={{ width: 150, fontSize: 13 }}>{job?.service_type}</Text>
                               <Text style={{ width: 120, fontSize: 13, color: "#64748B" }}>{job?.customer_name}</Text>
                               <Text style={{ width: 100, fontSize: 13, fontWeight: "700", textAlign: "right" }}>K{job?.price}</Text>
@@ -1933,16 +1933,16 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                       <TouchableOpacity onPress={() => setActiveTab("users")}><Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>VIEW ALL →</Text></TouchableOpacity>
                     </View>
                     {users?.slice(0, 5)?.map(u => (
-                      <View key={u.id} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
+                      <View key={u?.id || Math.random()} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
                         <View>
-                          <Text style={{ fontWeight: "700", fontSize: 13 }}>{u.name}</Text>
-                          <Text style={{ fontSize: 11, color: "#64748B" }}>{u.email}</Text>
+                          <Text style={{ fontWeight: "700", fontSize: 13 }}>{u?.name}</Text>
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>{u?.email}</Text>
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
-                          <View style={{ backgroundColor: u.role === "provider" ? "#DCFCE7" : "#DBEAFE", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-                            <Text style={{ fontSize: 10, fontWeight: "800", color: u.role === "provider" ? "#166534" : "#1E40AF" }}>{(u.role || "").toUpperCase()}</Text>
+                          <View style={{ backgroundColor: u?.role === "provider" ? "#DCFCE7" : "#DBEAFE", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 10, fontWeight: "800", color: u?.role === "provider" ? "#166534" : "#1E40AF" }}>{(u?.role || "").toUpperCase()}</Text>
                           </View>
-                          <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{new Date(u.created_at).toLocaleDateString()}</Text>
+                          <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{new Date(u?.created_at).toLocaleDateString()}</Text>
                         </View>
                       </View>
                     ))}
@@ -1975,7 +1975,7 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                 </View>
               </View>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-                {["All Roles", "Service Providers", "Customers", "Admins"].map(f => (
+                {["All Roles", "Service Providers", "Customers", "Admins"]?.map(f => (
                   <TouchableOpacity key={f} onPress={() => setRoleFilter(f)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: roleFilter === f ? COLORS.primary : "#E2E8F0", borderWidth: 1, borderColor: roleFilter === f ? COLORS.primary : "#CBD5E1" }}><Text style={{ fontSize: 11, fontWeight: "700", color: roleFilter === f ? "#fff" : "#475569" }}>{f.toUpperCase()}</Text></TouchableOpacity>
                 ))}
               </View>
@@ -1985,34 +1985,34 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                 <View style={{ padding: 40, alignItems: "center" }}><Text style={{ color: "#64748B", fontSize: 14 }}>No users found.</Text></View>
               ) : users?.filter(u => {
                   const q = (searchQuery || "").toLowerCase();
-                  return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q) || (u.phone_number || "").toLowerCase().includes(q);
+                  return (u?.name || "").toLowerCase().includes(q) || (u?.email || "").toLowerCase().includes(q) || (u.phone_number || "").toLowerCase().includes(q);
                 })?.map(u => (
-                <View key={u.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, elevation: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5 }}>
+                <View key={u?.id || Math.random()} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, elevation: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 5 }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{u.name}</Text>
-                        <Text style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(u.created_at).toLocaleDateString()}</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{u?.name}</Text>
+                        <Text style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(u?.created_at).toLocaleDateString()}</Text>
                       </View>
-                      <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 6 }}>{u.email} • {u.phone_number}</Text>
-                      <Text style={{ fontSize: 12, color: "#1E293B", fontWeight: "600", marginBottom: 6 }}>Balance: K{parseFloat(u.balance || 0).toFixed(2)} • Status: {u.status || 'active'}</Text>
-                      {u.roles?.includes('provider') && u.trade_type && (<Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: "600", marginBottom: 6 }}>📍 {u.city_location || 'PNG'} • {u.trade_type}</Text>)}
+                      <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 6 }}>{u?.email} • {u.phone_number}</Text>
+                      <Text style={{ fontSize: 12, color: "#1E293B", fontWeight: "600", marginBottom: 6 }}>Balance: K{parseFloat(u?.balance || 0).toFixed(2)} • Status: {u?.status || 'active'}</Text>
+                      {u?.roles?.includes('provider') && u?.trade_type && (<Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: "600", marginBottom: 6 }}>📍 {u?.city_location || 'PNG'} • {u?.trade_type}</Text>)}
                       <View style={{ flexDirection: "row", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
-                        {(Array.isArray(u.roles) ? u.roles : []).map(r => (
+                        {(Array.isArray(u?.roles) ? u?.roles : []).map(r => (
                           <View key={r} style={{ backgroundColor: r === 'provider' ? "#DCFCE7" : (r === 'customer' ? "#DBEAFE" : "#E2E8F0"), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: r === 'provider' ? "#166534" : (r === 'customer' ? "#1E40AF" : "#475569") }}>{r.toUpperCase()}</Text></View>
                         ))}
                         {u.is_verified && <View style={{ backgroundColor: "#F0FDF4", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: "#BBF7D0" }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#15803D" }}>✅ VERIFIED</Text></View>}
                         {u.is_flagged && <View style={{ backgroundColor: "#FEF2F2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#B91C1C" }}>🚩 FLAGGED</Text></View>}
-                        {u.status === 'suspended' && <View style={{ backgroundColor: "#000", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#fff" }}>⛔ SUSPENDED</Text></View>}
+                        {u?.status === 'suspended' && <View style={{ backgroundColor: "#000", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#fff" }}>⛔ SUSPENDED</Text></View>}
                       </View>
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                        <TouchableOpacity onPress={() => handleUserAction(u.id, 'update', { role: u.role === 'provider' ? 'customer' : 'provider' })} style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: "#E2E8F0" }}><Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Toggle Role</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleUserAction(u.id, 'update', { status: u.status === 'suspended' ? 'active' : 'suspended' })} style={{ backgroundColor: u.status === 'suspended' ? "#DCFCE7" : "#FEF2F2", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: u.status === 'suspended' ? "#BBF7D0" : "#FECDD3" }}><Text style={{ fontSize: 10, fontWeight: "700", color: u.status === 'suspended' ? "#166534" : "#B91C1C" }}>{u.status === 'suspended' ? 'Activate' : 'Suspend'}</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(u?.id, 'update', { role: u?.role === 'provider' ? 'customer' : 'provider' })} style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: "#E2E8F0" }}><Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>Toggle Role</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(u?.id, 'update', { status: u?.status === 'suspended' ? 'active' : 'suspended' })} style={{ backgroundColor: u?.status === 'suspended' ? "#DCFCE7" : "#FEF2F2", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: u?.status === 'suspended' ? "#BBF7D0" : "#FECDD3" }}><Text style={{ fontSize: 10, fontWeight: "700", color: u?.status === 'suspended' ? "#166534" : "#B91C1C" }}>{u?.status === 'suspended' ? 'Activate' : 'Suspend'}</Text></TouchableOpacity>
                       </View>
                     </View>
                     <View style={{ flexDirection: "row", gap: 4 }}>
-                      <TouchableOpacity onPress={() => { setEditingUser({ ...u, role: u.role || (u.roles && u.roles[0]) || 'customer' }); setModalVisible(true); }} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 14 }}>✏️</Text></TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleUserAction(u.id, 'delete')} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 14 }}>🗑️</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setEditingUser({ ...u, role: u?.role || (u?.roles && u?.roles[0]) || 'customer' }); setModalVisible(true); }} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 14 }}>✏️</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleUserAction(u?.id, 'delete')} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" }}><Text style={{ fontSize: 14 }}>🗑️</Text></TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -2028,19 +2028,19 @@ function AdminScreen({ onNavigate, onLogout, user }) {
                 <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, marginBottom: 24, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No active matching transactions</Text></View>
               ) : (
                 queue?.map(item => (
-                  <View key={item.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: item.status === 'completed' ? "#10B981" : (item.status === 'cancelled' ? "#EF4444" : "#3B82F6") }}>
+                  <View key={item?.id || Math.random()} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: item?.status === 'completed' ? "#10B981" : (item?.status === 'cancelled' ? "#EF4444" : "#3B82F6") }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <View>
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item.service_type} Match</Text>
-                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item.customer_name} ➔ {item.provider_name || 'Searching...'}</Text>
-                        <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>ID: {item.id} • {new Date(item.created_at).toLocaleString()}</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item?.service_type} Match</Text>
+                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item?.customer_name} ➔ {item?.provider_name || 'Searching...'}</Text>
+                        <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>ID: {item.id} • {new Date(item?.created_at).toLocaleString()}</Text>
                       </View>
-                      <View style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#475569" }}>{(item.status || "").toUpperCase()}</Text></View>
+                      <View style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#475569" }}>{(item?.status || "").toUpperCase()}</Text></View>
                     </View>
-                    {item.status === 'pending' && (
+                    {item?.status === 'pending' && (
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                        <TouchableOpacity onPress={() => handleUserAction(item.id, 'queue_override', { matchId: item.id, action: 'force_complete' })} style={{ flex: 1, backgroundColor: "#10B981", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleUserAction(item.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Force Terminate</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete' })} style={{ flex: 1, backgroundColor: "#10B981", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Force Terminate</Text></TouchableOpacity>
                       </View>
                     )}
                   </View>
@@ -2422,22 +2422,24 @@ function WorkerCard({ worker, onPress }) {
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "800", fontSize: 18 }}>
-            {worker?.name ? worker.name.charAt(0) : "W"}
+            {(worker?.name || "W").charAt(0)}
           </Text>
         </LinearGradient>
-        <View
-          style={{
-            position: "absolute",
-            bottom: -3,
-            right: -3,
-            width: 16,
-            height: 16,
-            borderRadius: 8,
-            backgroundColor: "#10B981",
-            borderWidth: 2,
-            borderColor: "#fff",
-          }}
-        />
+        {worker?.is_available && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: -3,
+              right: -3,
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: "#10B981",
+              borderWidth: 2,
+              borderColor: "#fff",
+            }}
+          />
+        )}
       </View>
 
       <View style={{ flex: 1 }}>
@@ -2483,20 +2485,25 @@ function WorkerCard({ worker, onPress }) {
             marginVertical: 6,
           }}
         >
-          <StarRating rating={4.8} />
+          <StarRating rating={worker?.rating || 5.0} />
           <Text style={{ fontSize: 12, fontWeight: "600", color: COLORS.text }}>
-            4.8
+            {worker?.rating || "5.0"}
           </Text>
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Text style={{ fontSize: 12, color: COLORS.textMuted }}>
-              {worker?.distance_km
-                ? worker.distance_km + " km away"
-                : worker?.location_name || "Nearby"}
+              📍 {worker?.distance_km
+                ? parseFloat(worker?.distance_km || 0).toFixed(1) + " km away"
+                : worker?.location_name || "Port Moresby"}
             </Text>
           </View>
+          {worker?.hourly_rate && (
+            <Text style={{ fontSize: 12, fontWeight: "700", color: COLORS.primary }}>
+              K{worker?.hourly_rate}/hr
+            </Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>
