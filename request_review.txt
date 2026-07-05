@@ -1,6 +1,6 @@
-I have completely opened up the search filtering system in the Customer Module.
+I have updated the search functionality to be fully open across all text fields.
 
 Changes:
-1. WantokWorkforce.js: fetchNearbyProviders now requests the full worker list from the backend without any parameters. It then applies a comprehensive frontend text filter that matches against name, role, bio, category, and skills.
-2. match_service.js: Updated the SQL queries to provide 'category' (alias for primary_skill) and 'skills' (array parsed from provider_profiles.skills_specialization) to the frontend, ensuring the broad filtering has all the data it needs.
-3. Verified the build is clean and the code is syntactically correct.
+1. WantokWorkforce.js: fetchNearbyProviders now uses the 'keyword' parameter. It implements a broad frontend filter matching against title, name, bio, category, and skills.
+2. match_controller.js: Added support for the 'keyword' query parameter to the backend.
+3. Verified the build is clean and logic is sound.
