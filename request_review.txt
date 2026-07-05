@@ -6,7 +6,7 @@ Key features:
 - Scoring-based fuzzy matching loop that handles:
     - Standard substring matches.
     - Typo handling using a lightweight distance check (allowing for 1-character differences).
-    - Keyword fragment matching.
+    - Keyword fragment matching across name, role, bio, and skills.
 - Graceful error handling and empty state management.
 
 Verified clean build and syntax.
