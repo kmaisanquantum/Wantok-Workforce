@@ -11,7 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
-  RefreshControl, Modal,
+  RefreshControl, Modal, Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import categories from "./categories.json";
@@ -429,7 +429,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                     <View>
                       <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text }}>Work Status</Text>
                       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: user?.is_available ? "#10B981" : "#9CA3AF", marginRight: 6 }} />
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: user?.is_available ? "#10B981" : "#9CA3AF", marginRight: 6 }} />
                         <Text style={{ fontSize: 13, fontWeight: "600", color: user?.is_available ? "#10B981" : "#6B7280" }}>{user?.is_available ? "Available for Jobs" : "Busy / Offline"}</Text>
                       </View>
                     </View>
@@ -1999,19 +1999,19 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       <Text style={{ color: "#64748B", fontSize: 13, fontStyle: "italic" }}>No active disputes requiring intervention.</Text>
                     ) : (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View>
-                          <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingBottom: 8, marginBottom: 8 }}>
+            <View>
+              <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingBottom: 8, marginBottom: 8 }}>
                             <Text style={{ width: 150, fontWeight: "700", fontSize: 12 }}>SERVICE</Text>
                             <Text style={{ width: 120, fontWeight: "700", fontSize: 12 }}>CUSTOMER</Text>
                             <Text style={{ width: 100, fontWeight: "700", fontSize: 12, textAlign: "right" }}>AMOUNT</Text>
                             <Text style={{ width: 150, fontWeight: "700", fontSize: 12, textAlign: "center" }}>ACTIONS</Text>
                           </View>
                           {disputedJobs?.map(job => (
-                            <View key={job?.id || Math.random()} style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                <View key={job?.id || Math.random()} style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
                               <Text style={{ width: 150, fontSize: 13 }}>{job?.service_type}</Text>
                               <Text style={{ width: 120, fontSize: 13, color: "#64748B" }}>{job?.customer_name}</Text>
                               <Text style={{ width: 100, fontSize: 13, fontWeight: "700", textAlign: "right" }}>K{job?.price}</Text>
-                              <View style={{ width: 150, flexDirection: "row", justifyContent: "center", gap: 8 }}>
+                  <View style={{ width: 150, flexDirection: "row", justifyContent: "center", gap: 8 }}>
                                 <TouchableOpacity onPress={() => handleUserAction(job.id, "release_payout")} style={{ backgroundColor: "#10B981", padding: 6, borderRadius: 4 }}><Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>RELEASE</Text></TouchableOpacity>
                                 <TouchableOpacity onPress={() => handleUserAction(job.id, "refund_escrow")} style={{ backgroundColor: "#EF4444", padding: 6, borderRadius: 4 }}><Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>REFUND</Text></TouchableOpacity>
                               </View>
@@ -2028,12 +2028,12 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                     </View>
                     {users?.slice(0, 5)?.map(u => (
                       <View key={u?.id || Math.random()} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
-                        <View>
+            <View>
                           <Text style={{ fontWeight: "700", fontSize: 13 }}>{u?.name}</Text>
                           <Text style={{ fontSize: 11, color: "#64748B" }}>{u?.email}</Text>
                         </View>
-                        <View style={{ alignItems: "flex-end" }}>
-                          <View style={{ backgroundColor: u?.role === "provider" ? "#DCFCE7" : "#DBEAFE", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+            <View style={{ alignItems: "flex-end" }}>
+              <View style={{ backgroundColor: u?.role === "provider" ? "#DCFCE7" : "#DBEAFE", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
                             <Text style={{ fontSize: 10, fontWeight: "800", color: u?.role === "provider" ? "#166534" : "#1E40AF" }}>{(u?.role || "").toUpperCase()}</Text>
                           </View>
                           <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{new Date(u?.created_at).toLocaleDateString()}</Text>
@@ -2093,7 +2093,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       {u?.roles?.includes('provider') && u?.trade_type && (<Text style={{ fontSize: 12, color: COLORS.primary, fontWeight: "600", marginBottom: 6 }}>📍 {u?.city_location || 'PNG'} • {u?.trade_type}</Text>)}
                       <View style={{ flexDirection: "row", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
                         {(Array.isArray(u?.roles) ? u?.roles : []).map(r => (
-                          <View key={r} style={{ backgroundColor: r === 'provider' ? "#DCFCE7" : (r === 'customer' ? "#DBEAFE" : "#E2E8F0"), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: r === 'provider' ? "#166534" : (r === 'customer' ? "#1E40AF" : "#475569") }}>{r.toUpperCase()}</Text></View>
+              <View key={r} style={{ backgroundColor: r === 'provider' ? "#DCFCE7" : (r === 'customer' ? "#DBEAFE" : "#E2E8F0"), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: r === 'provider' ? "#166534" : (r === 'customer' ? "#1E40AF" : "#475569") }}>{r.toUpperCase()}</Text></View>
                         ))}
                         {u.is_verified && <View style={{ backgroundColor: "#F0FDF4", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: "#BBF7D0" }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#15803D" }}>✅ VERIFIED</Text></View>}
                         {u.is_flagged && <View style={{ backgroundColor: "#FEF2F2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#B91C1C" }}>🚩 FLAGGED</Text></View>}
@@ -2176,9 +2176,9 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center", marginBottom: 24 }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No pending profiles for review</Text></View>
                     ) : (
                       pendingProviders?.map(prov => (
-                        <View key={prov.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, flexDirection: "row", gap: 16 }}>
-                          <View style={{ flex: 1 }}><Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B" }}>{prov.name}</Text><Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "600" }}>{prov.primary_skill || "General Trade"}</Text><Text style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>{prov.email} • {prov.phone_number}</Text></View>
-                          <View style={{ width: 120, gap: 8 }}><TouchableOpacity onPress={() => handleUserAction(prov.id, "approve")} style={{ backgroundColor: "#10B981", padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Approve</Text></TouchableOpacity><TouchableOpacity onPress={() => handleUserAction(prov.id, "flag")} style={{ borderWidth: 1, borderColor: "#EF4444", padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#EF4444", fontWeight: "700", fontSize: 11 }}>Flag/Reject</Text></TouchableOpacity></View>
+            <View key={prov.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, flexDirection: "row", gap: 16 }}>
+              <View style={{ flex: 1 }}><Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B" }}>{prov.name}</Text><Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "600" }}>{prov.primary_skill || "General Trade"}</Text><Text style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>{prov.email} • {prov.phone_number}</Text></View>
+              <View style={{ width: 120, gap: 8 }}><TouchableOpacity onPress={() => handleUserAction(prov.id, "approve")} style={{ backgroundColor: "#10B981", padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Approve</Text></TouchableOpacity><TouchableOpacity onPress={() => handleUserAction(prov.id, "flag")} style={{ borderWidth: 1, borderColor: "#EF4444", padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#EF4444", fontWeight: "700", fontSize: 11 }}>Flag/Reject</Text></TouchableOpacity></View>
                         </View>
                       ))
                     )}
@@ -2187,9 +2187,9 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No community vouchers pending</Text></View>
                     ) : (
                       pendingVouching?.map(vouch => (
-                        <View key={vouch.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, flexDirection: "row", gap: 16 }}>
-                          <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: "800", color: "#1E293B" }}>Gatekeeper: {vouch.gatekeeper_name}</Text><Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "700" }}>{vouch.gatekeeper_role}</Text><Text style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Contact: {vouch.gatekeeper_contact}</Text><View style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 8 }} /><Text style={{ fontSize: 12, color: "#1E293B" }}>Provider: <Text style={{ fontWeight: "700" }}>{vouch.provider_name}</Text> ({vouch.provider_email})</Text></View>
-                          <View style={{ width: 100, gap: 8, justifyContent: "center" }}><TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/vouch/${vouch.id}/approve`, { method: "POST", headers: { "Authorization": `Bearer ${user?.token}` } }).then(res => res.ok ? (showAlert("Vouch Approved"), fetchPending()) : showAlert("Approval failed")); }} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Verify</Text></TouchableOpacity></View>
+            <View key={vouch.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, flexDirection: "row", gap: 16 }}>
+              <View style={{ flex: 1 }}><Text style={{ fontSize: 15, fontWeight: "800", color: "#1E293B" }}>Gatekeeper: {vouch.gatekeeper_name}</Text><Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "700" }}>{vouch.gatekeeper_role}</Text><Text style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Contact: {vouch.gatekeeper_contact}</Text><View style={{ height: 1, backgroundColor: "#E2E8F0", marginVertical: 8 }} /><Text style={{ fontSize: 12, color: "#1E293B" }}>Provider: <Text style={{ fontWeight: "700" }}>{vouch.provider_name}</Text> ({vouch.provider_email})</Text></View>
+              <View style={{ width: 100, gap: 8, justifyContent: "center" }}><TouchableOpacity onPress={() => { fetch(`${API_BASE}/admin/vouch/${vouch.id}/approve`, { method: "POST", headers: { "Authorization": `Bearer ${user?.token}` } }).then(res => res.ok ? (showAlert("Vouch Approved"), fetchPending()) : showAlert("Approval failed")); }} style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 11 }}>Verify</Text></TouchableOpacity></View>
                         </View>
                       ))
                     )}
@@ -2226,7 +2226,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                     <View key={log.id} style={{ marginBottom: 10, flexDirection: "row", gap: 10 }}>
                       <Text style={{ color: "#475569", fontSize: 11, width: 80, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false })}]</Text>
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: log.level === 'SEC' ? "#F87171" : "#22D3EE", backgroundColor: log.level === 'SEC' ? "rgba(248, 113, 113, 0.1)" : "rgba(34, 211, 238, 0.1)", paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>{log.level}</Text><Text style={{ color: "#E2E8F0", fontSize: 12, fontWeight: "600", fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>{log.message}</Text></View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: log.level === 'SEC' ? "#F87171" : "#22D3EE", backgroundColor: log.level === 'SEC' ? "rgba(248, 113, 113, 0.1)" : "rgba(34, 211, 238, 0.1)", paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3 }}>{log.level}</Text><Text style={{ color: "#E2E8F0", fontSize: 12, fontWeight: "600", fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>{log.message}</Text></View>
                         <Text style={{ color: "#64748B", fontSize: 11, marginTop: 2, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>PID: {Math.floor(1000 + Math.random() * 9000)} / host.wantok.internal</Text>
                       </View>
                     </View>
@@ -2581,11 +2581,18 @@ function WorkerCard({ worker, onPress }) {
             >
               {worker?.primary_skill || "General Trade"}
             </Text>
-            <Text
-              style={{ marginTop: 4, fontSize: 12, color: COLORS.textMuted }}
-            >
-              📞 {worker?.phone_number || "No contact info"}
-            </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+              <Text style={{ fontSize: 12, color: COLORS.textLight }}>📞</Text>
+              {(worker?.phone_number || worker?.phone || worker?.phoneNumber) ? (
+                <TouchableOpacity onPress={() => Linking.openURL(`tel:${(worker.phone_number || worker.phone || worker.phoneNumber).trim()}`)}>
+                  <Text style={{ fontSize: 12, color: '#0B5932', fontWeight: '700', textDecorationLine: 'underline' }}>
+                    {worker.phone_number || worker.phone || worker.phoneNumber}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ fontSize: 12, color: COLORS.textLight, fontStyle: 'italic' }}>No contact info</Text>
+              )}
+            </View>
           </View>
         </View>
 
