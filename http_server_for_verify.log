@@ -23,3 +23,4 @@ Hit CTRL-C to stop the server
 [2026-07-05T21:28:17.326Z]  "GET /_expo/static/js/web/AppEntry-cea3f05576ad3db80e8b4fea7316df3c.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
 [2026-07-05T21:28:59.210Z]  "GET /" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
 [2026-07-05T21:28:59.220Z]  "GET /_expo/static/js/web/AppEntry-cea3f05576ad3db80e8b4fea7316df3c.js" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
+http-server stopped.

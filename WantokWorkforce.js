@@ -172,7 +172,7 @@ function ProviderFinancialDashboard({ user, showAlert }) {
       </View>
 
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 8 }}>📜 Permanent Employment Record</Text>
-      {ledger.history.length === 0 ? (
+      {ledger.history?.length === 0 ? (
         <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border }}>
           <Text style={{ color: COLORS.textMuted }}>No completed job cards found.</Text>
         </View>
@@ -277,7 +277,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
             return isNotAdmin && isNotGeneralTrade;
           });
           setNearbyWorkers(activeProvidersOnly);
-        } else if (rawInput.length < 3) {
+        } else if (rawInput?.length < 3) {
           const strictShortResults = workers.filter(worker => {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
@@ -312,16 +312,16 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
             // Simple Levenshtein distance / typo handling hook for broken words
             const words = finalQuery.split(/\s+/);
             return words.every(word => {
-              if (word.length < 3) return searchTargetText.includes(word);
+              if (word?.length < 3) return searchTargetText.includes(word);
               // Returns true if a keyword segment closely matches a chunk of the profile text
               return searchTargetText.split(/\s+/).some(targetWord => {
                 if (targetWord.includes(word) || word.includes(targetWord)) return true;
                 // Fallback for single character typos (e.g., 'eletric' vs 'electric')
                 let distance = 0;
-                for (let i = 0; i < Math.min(word.length, targetWord.length); i++) {
+                for (let i = 0; i < Math.min(word?.length, targetWord?.length); i++) {
                   if (word[i] !== targetWord[i]) distance++;
                 }
-                return distance <= 1 && Math.abs(word.length - targetWord.length) <= 1;
+                return distance <= 1 && Math.abs(word?.length - targetWord?.length) <= 1;
               });
             });
           });
@@ -593,7 +593,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
               <View style={{ padding: 40, alignItems: 'center' }}>
                 <Text style={{ color: COLORS.textMuted }}>Searching for nearby providers...</Text>
               </View>
-            ) : nearbyWorkers?.length > 0 ? (
+            ) : (nearbyWorkers || []).length > 0 ? (
               <View style={{ gap: 12 }}>
                 <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 }}>Search Results</Text>
                 {nearbyWorkers?.map((worker) => (
@@ -1002,7 +1002,7 @@ function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
         </LinearGradient>
 
         <View style={{ padding: 16, gap: 12 }}>
-          {(!bookings || bookings.length === 0) ? (
+          {(!bookings || bookings?.length === 0) ? (
             <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16 }}>
               <Text style={{ fontSize: 14, color: COLORS.textMuted, textAlign: 'center' }}>No bookings found.</Text>
             </View>
@@ -1356,7 +1356,7 @@ function AuthScreen({ onAuth, showAlert }) {
         showAlert("Please provide your phone number and create a password.");
         return;
       }
-      if (password.length < 6) {
+      if (password?.length < 6) {
         showAlert("Password must be at least 6 characters long.");
         return;
       }
@@ -2412,7 +2412,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                 ))
               )}
               <Text style={{ fontSize: 14, fontWeight: "700", color: "#64748B", marginBottom: 12, marginTop: 12 }}>PENDING VERIFICATIONS</Text>
-              {pendingProviders?.length === 0 ? (
+              {(pendingProviders || []).length === 0 ? (
                 <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No pending verifications</Text></View>
               ) : (
                 pendingProviders?.map(prov => (
@@ -2443,7 +2443,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                 {activeSubTab === "verification_queue" && (
                   <View>
                     <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E293B", marginBottom: 16 }}>Account Verification Queue</Text>
-                    {pendingProviders?.length === 0 ? (
+                    {(pendingProviders || []).length === 0 ? (
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center", marginBottom: 24 }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No pending profiles for review</Text></View>
                     ) : (
                       pendingProviders?.map(prov => (
@@ -2454,7 +2454,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       ))
                     )}
                     <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E293B", marginBottom: 16, marginTop: 12 }}>🤝 Community Vouching Queue</Text>
-                    {pendingVouching?.length === 0 ? (
+                    {(pendingVouching || []).length === 0 ? (
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No community vouchers pending</Text></View>
                     ) : (
                       pendingVouching?.map(vouch => (
@@ -2490,7 +2490,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
               </View>
               <View style={{ backgroundColor: "#0F172A", borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: "#334155", elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: "#1E293B", paddingBottom: 8 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" }} /><Text style={{ color: "#94A3B8", fontSize: 11, fontWeight: "700", letterSpacing: 1 }}>TTY1 / SYSTEM_SERVICE / STDOUT</Text></View>
-                {logs?.length === 0 ? (
+                {(logs || []).length === 0 ? (
                   <Text style={{ color: "#475569", fontSize: 12, fontStyle: "italic", textAlign: "center", padding: 20 }}>- No active log stream -</Text>
                 ) : (
                   logs?.map(log => (
@@ -2616,7 +2616,7 @@ function ProviderInboxScreen({ user, showAlert }) {
             <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Inbox</Text>
           </View>
           <ScrollView>
-            {conversations.length === 0 ? (
+            {(conversations || [])?.length === 0 ? (
               <View style={{ padding: 40, alignItems: 'center' }}>
                 <Text style={{ color: COLORS.textMuted }}>No conversations yet.</Text>
               </View>
@@ -2704,7 +2704,7 @@ function ProviderInboxScreen({ user, showAlert }) {
 }
 
 export default function App() {
-  const [customAlert, setCustomAlert] = useState({ visible: false, message: "" });
+  const [customAlert, setCustomAlert] = useState({ visible: false, message: '' });
   const showAlert = (message) => setCustomAlert({ visible: true, message });
 
   const [screen, setScreen] = useState("home");
@@ -2772,6 +2772,10 @@ export default function App() {
   };
 
   const renderScreen = () => {
+    if (typeof workers !== 'undefined' && !workers) {
+      return <div className="p-6 text-center text-gray-500">Loading Wantok Workforce...</div>;
+    }
+
     // Hidden Admin Route Handling
     if (screen === "admin-auth") {
       if (isAuthenticated && user?.roles?.includes('admin')) {
