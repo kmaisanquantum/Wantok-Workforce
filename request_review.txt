@@ -1,6 +1,12 @@
-I have updated the search functionality to be fully open across all text fields.
+I have refactored the fetchNearbyProviders function in WantokWorkforce.js to include a client-side fuzzy matching engine.
 
-Changes:
-1. WantokWorkforce.js: fetchNearbyProviders now uses the 'keyword' parameter. It implements a broad frontend filter matching against title, name, bio, category, and skills.
-2. match_controller.js: Added support for the 'keyword' query parameter to the backend.
-3. Verified the build is clean and logic is sound.
+Key features:
+- SYNONYM_EXTENSIONS map for stemming roots (e.g., 'law' matches 'Legal').
+- Standardized search input with synonym root appending.
+- Scoring-based fuzzy matching loop that handles:
+    - Standard substring matches.
+    - Typo handling using a lightweight distance check (allowing for 1-character differences).
+    - Keyword fragment matching.
+- Graceful error handling and empty state management.
+
+Verified clean build and syntax.
