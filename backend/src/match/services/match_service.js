@@ -42,7 +42,7 @@ class MatchService {
 
     const sql = `
       SELECT
-        u.id, u.name, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
+        u.id, u.name, u.phone_number, u.email, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
         u.primary_skill as category,
         CASE WHEN pp.skills_specialization IS NOT NULL THEN string_to_array(pp.skills_specialization, ',') ELSE ARRAY[]::TEXT[] END as skills,
         CASE WHEN u.location_coords IS NOT NULL THEN ST_X(u.location_coords::geometry) ELSE NULL END as longitude,
@@ -105,7 +105,7 @@ class MatchService {
 
     const sql = `
       SELECT
-        u.id, u.name, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
+        u.id, u.name, u.phone_number, u.email, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
         u.primary_skill as category,
         CASE WHEN pp.skills_specialization IS NOT NULL THEN string_to_array(pp.skills_specialization, ',') ELSE ARRAY[]::TEXT[] END as skills,
         CASE WHEN u.location_coords IS NOT NULL THEN ST_X(u.location_coords::geometry) ELSE NULL END as longitude,
