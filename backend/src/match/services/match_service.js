@@ -4,7 +4,7 @@ const redisClient = require('../../../db/redis_init');
 class MatchService {
   /**
    * Robust global text-based search for workers.
-   * Filters by name, primary_skill, location_name, role, or bio using tokenized matching.
+   * Filters by name, primary_skill, or location_name using tokenized matching.
    */
   static async textSearchWorkers(query, mappedCategory = null) {
     const pool = UserModel.getPool();
@@ -26,9 +26,9 @@ class MatchService {
           if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
               const rIndex = pgParams.length + 1;
               pgParams.push(parseFloat(token));
-              return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR role ILIKE $${pIndex} OR bio ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
+              return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
           }
-          return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR role ILIKE $${pIndex} OR bio ILIKE $${pIndex})`;
+          return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
         });
         pgWhereClauses.push(`(${tokenClauses.join(' AND ')})`);
       }
@@ -37,7 +37,7 @@ class MatchService {
     if (mappedCategory) {
       const cIndex = pgParams.length + 1;
       pgParams.push(`%${mappedCategory}%`);
-      pgWhereClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex} OR role ILIKE $${cIndex})`);
+      pgWhereClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
     }
 
     const sql = `
@@ -82,16 +82,16 @@ class MatchService {
         if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
             const rIndex = pgParams.length + 1;
             pgParams.push(parseFloat(token));
-            return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR role ILIKE $${pIndex} OR bio ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
+            return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
         }
-        return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR role ILIKE $${pIndex} OR bio ILIKE $${pIndex})`;
+        return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
       });
     }
 
     if (mappedCategory) {
       const cIndex = pgParams.length + 1;
       pgParams.push(`%${mappedCategory}%`);
-      textClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex} OR role ILIKE $${cIndex})`);
+      textClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
     }
 
     if (textClauses.length > 0) {

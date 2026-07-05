@@ -1,8 +1,9 @@
-I have completely removed the category restriction logic from the Customer Module search.
+I have moved the broad search logic to the frontend to fix the internal server error and maintain compatibility with the backend's expected parameter schema.
 
 Changes:
-1. WantokWorkforce.js: Removed CATEGORY_SYNONYMS and updated fetchNearbyProviders to use the generic 'search' parameter.
-2. match_controller.js: Removed categorySynonyms and normalizeSearchTrade. Updated getNearbyWorkers to handle the 'search' parameter and pass it to the service.
-3. match_service.js: Expanded textSearchWorkers and findNearbyWorkers to include 'role' and 'bio' in the search filters, allowing for a broad text match across all worker fields.
-
-Verified the build remains clean and the code is syntactically correct.
+1. Reverted backend MatchController and MatchService to their original state, but ensured the SELECT query returns 'role' and 'bio' fields.
+2. Updated fetchNearbyProviders in WantokWorkforce.js:
+   - It now fetches all workers from the base endpoint (no search/category params).
+   - Applies a broad text filter on the results (name, role, bio, category, skills).
+   - Handles errors gracefully by setting an empty array and removing alerts.
+3. Verified the build remains clean.
