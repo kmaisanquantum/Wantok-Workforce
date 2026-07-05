@@ -260,8 +260,18 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
         if (!rawInput) {
           setNearbyWorkers(workers);
+        } else if (rawInput.length < 3) {
+          // Guard clause for short inputs (< 3 chars): Strict prefix matching only
+          const strictShortResults = workers.filter(worker => {
+            return (
+              (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
+              (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
+              (worker.category || '').toLowerCase().startsWith(normalizedInput)
+            );
+          });
+          setNearbyWorkers(strictShortResults);
         } else {
-          // Implement lightweight, scoring-based fuzzy matching loop
+          // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
           const fuzzyResults = workers.filter(worker => {
             const searchTargetText = [
               worker.name,
