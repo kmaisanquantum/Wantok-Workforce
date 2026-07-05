@@ -104,8 +104,11 @@ const normalizeSearchTrade = (query) => {
 
 class MatchController {
   static async getNearbyWorkers(req, res) {
-    const { latitude, longitude, trade_category, radius } = req.query;
-    const { original: queryText, mapped: categoryTag } = normalizeSearchTrade(trade_category);
+    const { latitude, longitude, trade_category, keyword, radius } = req.query;
+
+    // Support generic 'keyword', then 'trade_category'
+    const searchParam = (keyword || trade_category || '').toLowerCase().trim();
+    const { original: queryText, mapped: categoryTag } = normalizeSearchTrade(searchParam);
 
     const lat = (latitude && latitude !== 'undefined') ? parseFloat(latitude) : null;
     const lon = (longitude && longitude !== 'undefined') ? parseFloat(longitude) : null;
@@ -113,11 +116,11 @@ class MatchController {
 
     try {
       if (!hasCoordinates) {
-        console.log(`ℹ️ [MatchController] Missing coordinates. Falling back to global text search for: "${trade_category || 'Any'}" (Mapped: ${categoryTag})`);
+        console.log(`ℹ️ [MatchController] Missing coordinates. Falling back to global text search for: "${searchParam || 'Any'}"`);
         const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, queryText, categoryTag, search_type: 'global_text' },
+          search_params: { searchParam, queryText, categoryTag, search_type: 'global_text' },
           workers
         });
       }
@@ -127,7 +130,7 @@ class MatchController {
         const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, queryText, categoryTag, search_type: 'fallback_text_invalid_coords' },
+          search_params: { searchParam, queryText, categoryTag, search_type: 'fallback_text_invalid_coords' },
           workers
         });
       }
@@ -140,10 +143,10 @@ class MatchController {
         searchRadius = 50;
       }
 
-      console.log(`🔍 [MatchController] Attempting spatial search for '${trade_category || 'Any'}' near [${lat}, ${lon}] within ${searchRadius}km (Mapped: ${categoryTag})`);
+      console.log(`🔍 [MatchController] Attempting spatial search for '${searchParam || 'Any'}' near [${lat}, ${lon}] within ${searchRadius}km`);
 
       if (redisClient) {
-        const jobPayload = { lat, lon, trade_category, queryText, categoryTag, radius: searchRadius, timestamp: new Date().toISOString() };
+        const jobPayload = { lat, lon, searchParam, queryText, categoryTag, radius: searchRadius, timestamp: new Date().toISOString() };
         redisClient.publish('job_alerts', JSON.stringify(jobPayload));
       }
 
@@ -151,7 +154,7 @@ class MatchController {
         const workers = await MatchService.findNearbyWorkers(lat, lon, queryText, categoryTag, searchRadius);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { lat, lon, trade_category, queryText, categoryTag, radius: searchRadius, search_type: 'spatial' },
+          search_params: { lat, lon, searchParam, queryText, categoryTag, radius: searchRadius, search_type: 'spatial' },
           workers
         });
       } catch (spatialError) {
@@ -159,7 +162,7 @@ class MatchController {
         const workers = await MatchService.textSearchWorkers(queryText, categoryTag);
         return res.status(200).json({
           results_count: workers.length,
-          search_params: { trade_category, queryText, categoryTag, search_type: 'fallback_text_on_spatial_error' },
+          search_params: { searchParam, queryText, categoryTag, search_type: 'fallback_text_on_spatial_error' },
           workers
         });
       }

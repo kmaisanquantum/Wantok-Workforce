@@ -230,32 +230,33 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
   const fetchNearbyProviders = async () => {
     setIsSearching(true);
     try {
-      // Request the entire list of workers without any category filters or parameters
-      const url = `${API_BASE}/match/nearby`;
+      // Update the API endpoint to use a global keyword search query
+      const cleanQuery = (searchText || '').trim();
+      const url = `${API_BASE}/match/nearby?keyword=${encodeURIComponent(cleanQuery)}`;
       const response = await fetch(url);
       const data = await response.json().catch(() => ({ error: "Invalid response from server" }));
 
       if (response.ok) {
-        const query = (searchText || "").toLowerCase().trim();
+        const queryLower = cleanQuery.toLowerCase();
         const allWorkers = data.workers || [];
 
-        const openResults = allWorkers.filter(worker => {
-          if (!query) return true;
+        const fullyOpenResults = allWorkers.filter(worker => {
+          if (!queryLower) return true; // Show all if search input is empty
 
-          const nameMatch = (worker.name || '').toLowerCase().includes(query);
-          const roleMatch = (worker.role || '').toLowerCase().includes(query);
-          const bioMatch = (worker.bio || '').toLowerCase().includes(query);
-          const categoryMatch = (worker.category || '').toLowerCase().includes(query);
+          const matchTitle = (worker.role || '').toLowerCase().includes(queryLower);
+          const matchName = (worker.name || '').toLowerCase().includes(queryLower);
+          const matchBio = (worker.bio || '').toLowerCase().includes(queryLower);
+          const matchCategory = (worker.category || '').toLowerCase().includes(queryLower);
 
           // Check skills array if it exists
-          const skillsMatch = worker.skills && Array.isArray(worker.skills) && worker.skills.some(skill =>
-            skill.toLowerCase().includes(query)
+          const matchSkills = worker.skills && Array.isArray(worker.skills) && worker.skills.some(skill =>
+            skill.toLowerCase().includes(queryLower)
           );
 
-          return nameMatch || roleMatch || bioMatch || categoryMatch || skillsMatch;
+          return matchTitle || matchName || matchBio || matchCategory || matchSkills;
         });
 
-        setNearbyWorkers(openResults);
+        setNearbyWorkers(fullyOpenResults);
       } else {
         setNearbyWorkers([]);
       }
