@@ -1186,7 +1186,7 @@ function AuthScreen({ onAuth }) {
   const [identifier, setIdentifier] = useState(""); // Unified local state for Sign In to fix lag
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [showPassword, setShowPassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignIn = async () => {
     if (!identifier || !password) {
@@ -1328,7 +1328,7 @@ function AuthScreen({ onAuth }) {
                     padding: 12,
                     fontSize: 14,
                   }}
-                  placeholder="0000 0000 or email@example.com"
+                  placeholder="email@example.com"
                   value={identifier}
                   onChangeText={setIdentifier}
                   autoCapitalize="none"
