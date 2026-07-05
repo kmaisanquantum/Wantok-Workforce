@@ -260,23 +260,26 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
 
         if (!rawInput) {
           // Filter out admins even when the search bar is empty
-          const activeProvidersOnly = workers.filter(worker =>
-            (worker.role || '').toLowerCase() !== 'admin' &&
-            (worker.role || '').toLowerCase() !== 'master admin' &&
-            !worker.isAdmin
-          );
+          const activeProvidersOnly = workers.filter(worker => {
+            const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
+                               (worker.role || '').toLowerCase() !== 'master admin' &&
+                               !worker.isAdmin;
+            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
+            return isNotAdmin && isNotGeneralTrade;
+          });
           setNearbyWorkers(activeProvidersOnly);
         } else if (rawInput.length < 3) {
           const strictShortResults = workers.filter(worker => {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
+            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
 
-            const matchesSearch = (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
+            const matchesSearchCriteria = (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.category || '').toLowerCase().startsWith(normalizedInput);
 
-            return isNotAdmin && matchesSearch;
+            return isNotAdmin && isNotGeneralTrade && matchesSearchCriteria;
           });
           setNearbyWorkers(strictShortResults);
         } else {
@@ -284,7 +287,8 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
-            if (!isNotAdmin) return false;
+            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
+            if (!isNotAdmin || !isNotGeneralTrade) return false;
 
             // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
             const searchTargetText = [
