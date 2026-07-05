@@ -259,20 +259,34 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser }) {
         const finalQuery = extendedKeyword.toLowerCase();
 
         if (!rawInput) {
-          setNearbyWorkers(workers);
+          // Filter out admins even when the search bar is empty
+          const activeProvidersOnly = workers.filter(worker =>
+            (worker.role || '').toLowerCase() !== 'admin' &&
+            (worker.role || '').toLowerCase() !== 'master admin' &&
+            !worker.isAdmin
+          );
+          setNearbyWorkers(activeProvidersOnly);
         } else if (rawInput.length < 3) {
-          // Guard clause for short inputs (< 3 chars): Strict prefix matching only
           const strictShortResults = workers.filter(worker => {
-            return (
-              (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
-              (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
-              (worker.category || '').toLowerCase().startsWith(normalizedInput)
-            );
+            const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
+                               (worker.role || '').toLowerCase() !== 'master admin' &&
+                               !worker.isAdmin;
+
+            const matchesSearch = (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
+                                  (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
+                                  (worker.category || '').toLowerCase().startsWith(normalizedInput);
+
+            return isNotAdmin && matchesSearch;
           });
           setNearbyWorkers(strictShortResults);
         } else {
-          // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
           const fuzzyResults = workers.filter(worker => {
+            const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
+                               (worker.role || '').toLowerCase() !== 'master admin' &&
+                               !worker.isAdmin;
+            if (!isNotAdmin) return false;
+
+            // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
             const searchTargetText = [
               worker.name,
               worker.role,
