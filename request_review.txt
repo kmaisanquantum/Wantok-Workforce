@@ -1,9 +1,6 @@
-I have moved the broad search logic to the frontend to fix the internal server error and maintain compatibility with the backend's expected parameter schema.
+I have completely opened up the search filtering system in the Customer Module.
 
 Changes:
-1. Reverted backend MatchController and MatchService to their original state, but ensured the SELECT query returns 'role' and 'bio' fields.
-2. Updated fetchNearbyProviders in WantokWorkforce.js:
-   - It now fetches all workers from the base endpoint (no search/category params).
-   - Applies a broad text filter on the results (name, role, bio, category, skills).
-   - Handles errors gracefully by setting an empty array and removing alerts.
-3. Verified the build remains clean.
+1. WantokWorkforce.js: fetchNearbyProviders now requests the full worker list from the backend without any parameters. It then applies a comprehensive frontend text filter that matches against name, role, bio, category, and skills.
+2. match_service.js: Updated the SQL queries to provide 'category' (alias for primary_skill) and 'skills' (array parsed from provider_profiles.skills_specialization) to the frontend, ensuring the broad filtering has all the data it needs.
+3. Verified the build is clean and the code is syntactically correct.

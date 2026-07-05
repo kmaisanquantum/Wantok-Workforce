@@ -11,7 +11,7 @@ class MatchService {
     console.log(`🔍 [MatchService] Performing global search for: "${query || 'Any'}"`);
 
     let pgParams = [];
-    let pgWhereClauses = ["active_persona = 'provider'", "is_available = true"];
+    let pgWhereClauses = ["u.active_persona = 'provider'", "u.is_available = true"];
 
     // Handle "all" wildcards
     const isSearchAll = !query || query === '*all' || query === '*';
@@ -26,9 +26,9 @@ class MatchService {
           if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
               const rIndex = pgParams.length + 1;
               pgParams.push(parseFloat(token));
-              return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
+              return `(u.name ILIKE $${pIndex} OR u.primary_skill ILIKE $${pIndex} OR u.location_name ILIKE $${pIndex} OR u.hourly_rate <= $${rIndex})`;
           }
-          return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
+          return `(u.name ILIKE $${pIndex} OR u.primary_skill ILIKE $${pIndex} OR u.location_name ILIKE $${pIndex})`;
         });
         pgWhereClauses.push(`(${tokenClauses.join(' AND ')})`);
       }
@@ -37,18 +37,21 @@ class MatchService {
     if (mappedCategory) {
       const cIndex = pgParams.length + 1;
       pgParams.push(`%${mappedCategory}%`);
-      pgWhereClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
+      pgWhereClauses.push(`(u.primary_skill ILIKE $${cIndex} OR u.name ILIKE $${cIndex})`);
     }
 
     const sql = `
       SELECT
-        id, name, primary_skill, location_name, is_verified, hourly_rate, role, bio,
-        CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
-        CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
+        u.id, u.name, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
+        u.primary_skill as category,
+        CASE WHEN pp.skills_specialization IS NOT NULL THEN string_to_array(pp.skills_specialization, ',') ELSE ARRAY[]::TEXT[] END as skills,
+        CASE WHEN u.location_coords IS NOT NULL THEN ST_X(u.location_coords::geometry) ELSE NULL END as longitude,
+        CASE WHEN u.location_coords IS NOT NULL THEN ST_Y(u.location_coords::geometry) ELSE NULL END as latitude,
         NULL as distance_km
-      FROM users
+      FROM users u
+      LEFT JOIN provider_profiles pp ON u.id = pp.user_id
       WHERE ${pgWhereClauses.join(' AND ')}
-      ORDER BY is_verified DESC, name ASC;
+      ORDER BY u.is_verified DESC, u.name ASC;
     `;
 
     try {
@@ -67,8 +70,8 @@ class MatchService {
     const pool = UserModel.getPool();
 
     let pgParams = [lon, lat, radiusKm];
-    let pgWhereClauses = ["active_persona = 'provider'", "is_available = true"];
-    const spatialClause = `(location_coords IS NOT NULL AND ST_DWithin(location_coords, ST_MakePoint($1, $2)::geography, $3 * 1000))`;
+    let pgWhereClauses = ["u.active_persona = 'provider'", "u.is_available = true"];
+    const spatialClause = `(u.location_coords IS NOT NULL AND ST_DWithin(u.location_coords, ST_MakePoint($1, $2)::geography, $3 * 1000))`;
 
     // Handle "all" wildcards
     const isSearchAll = !query || query === '*all' || query === '*';
@@ -82,39 +85,42 @@ class MatchService {
         if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
             const rIndex = pgParams.length + 1;
             pgParams.push(parseFloat(token));
-            return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex} OR hourly_rate <= $${rIndex})`;
+            return `(u.name ILIKE $${pIndex} OR u.primary_skill ILIKE $${pIndex} OR u.location_name ILIKE $${pIndex} OR u.hourly_rate <= $${rIndex})`;
         }
-        return `(name ILIKE $${pIndex} OR primary_skill ILIKE $${pIndex} OR location_name ILIKE $${pIndex})`;
+        return `(u.name ILIKE $${pIndex} OR u.primary_skill ILIKE $${pIndex} OR u.location_name ILIKE $${pIndex})`;
       });
     }
 
     if (mappedCategory) {
       const cIndex = pgParams.length + 1;
       pgParams.push(`%${mappedCategory}%`);
-      textClauses.push(`(primary_skill ILIKE $${cIndex} OR name ILIKE $${cIndex})`);
+      textClauses.push(`(u.primary_skill ILIKE $${cIndex} OR u.name ILIKE $${cIndex})`);
     }
 
     if (textClauses.length > 0) {
        pgWhereClauses.push(`(${textClauses.join(' AND ')})`);
-    } else {
+    } else if (lat !== null && lon !== null) {
        pgWhereClauses.push(spatialClause);
     }
 
     const sql = `
       SELECT
-        id, name, primary_skill, location_name, is_verified, hourly_rate, role, bio,
-        CASE WHEN location_coords IS NOT NULL THEN ST_X(location_coords::geometry) ELSE NULL END as longitude,
-        CASE WHEN location_coords IS NOT NULL THEN ST_Y(location_coords::geometry) ELSE NULL END as latitude,
-        CASE WHEN location_coords IS NOT NULL
-             THEN ST_DistanceSphere(location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
+        u.id, u.name, u.primary_skill, u.location_name, u.is_verified, u.hourly_rate, u.role, u.bio,
+        u.primary_skill as category,
+        CASE WHEN pp.skills_specialization IS NOT NULL THEN string_to_array(pp.skills_specialization, ',') ELSE ARRAY[]::TEXT[] END as skills,
+        CASE WHEN u.location_coords IS NOT NULL THEN ST_X(u.location_coords::geometry) ELSE NULL END as longitude,
+        CASE WHEN u.location_coords IS NOT NULL THEN ST_Y(u.location_coords::geometry) ELSE NULL END as latitude,
+        CASE WHEN u.location_coords IS NOT NULL
+             THEN ST_DistanceSphere(u.location_coords::geometry, ST_MakePoint($1, $2)) / 1000.0
              ELSE NULL END as distance_km
-      FROM users
+      FROM users u
+      LEFT JOIN provider_profiles pp ON u.id = pp.user_id
       WHERE ${pgWhereClauses.join(' AND ')}
       ORDER BY
-        (CASE WHEN location_coords IS NOT NULL AND ${spatialClause} THEN 0 ELSE 1 END),
-        is_verified DESC,
+        (CASE WHEN u.location_coords IS NOT NULL AND ${spatialClause} THEN 0 ELSE 1 END),
+        u.is_verified DESC,
         distance_km ASC NULLS LAST,
-        name ASC;
+        u.name ASC;
     `;
 
     try {
