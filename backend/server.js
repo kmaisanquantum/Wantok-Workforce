@@ -22,6 +22,7 @@ const matchRoutes = require('./src/match/routes/match_routes');
 const bookingRoutes = require('./src/match/routes/booking_routes');
 const adminRoutes = require('./src/admin/routes/admin_routes');
 const providerRoutes = require('./src/providers/routes/provider_routes');
+const messageRoutes = require('./src/match/routes/message_routes');
 const UserModel = require('./src/auth/models/user_model');
 const { initializeDatabase } = require('./db/db_init');
 const redisClient = require('./db/redis_init');
@@ -151,6 +152,7 @@ app.use('/api/match', matchRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/providers', providerRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health Checks
 app.get('/api/health', (req, res) => {
