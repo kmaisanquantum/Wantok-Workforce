@@ -74,6 +74,7 @@ class MessageController {
           m.provider_id,
           CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END as other_party_id,
           u.name as other_party_name,
+          u.primary_skill as other_party_category,
           m.text as last_message,
           m.created_at as last_message_time
         FROM messages m
