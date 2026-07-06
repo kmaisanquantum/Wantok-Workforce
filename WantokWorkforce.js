@@ -274,7 +274,8 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
             const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
-            return isNotAdmin && isNotGeneralTrade;
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            return isNotAdmin && isNotGeneralTrade && isNotMockProvider;
           });
           setNearbyWorkers(activeProvidersOnly);
         } else if (rawInput.length < 3) {
@@ -283,10 +284,11 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
             const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
             const matchesSearchCriteria = (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.category || '').toLowerCase().startsWith(normalizedInput);
-            return isNotAdmin && isNotGeneralTrade && matchesSearchCriteria;
+            return isNotAdmin && isNotGeneralTrade && isNotMockProvider && matchesSearchCriteria;
           });
           setNearbyWorkers(strictShortResults);
         } else {
@@ -295,7 +297,8 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
             const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
-            if (!isNotAdmin || !isNotGeneralTrade) return false;
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            if (!isNotAdmin || !isNotGeneralTrade || !isNotMockProvider) return false;
 
             // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
             const searchTargetText = [
