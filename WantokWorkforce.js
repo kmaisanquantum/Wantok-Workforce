@@ -269,7 +269,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
 
         if (!rawInput) {
           // Filter out admins even when the search bar is empty
-          const activeProvidersOnly = workers.filter(worker => {
+          const activeProvidersOnly = workers?.filter(worker => {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
@@ -277,8 +277,8 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
             return isNotAdmin && isNotGeneralTrade;
           });
           setNearbyWorkers(activeProvidersOnly);
-        } else if (rawInput?.length < 3) {
-          const strictShortResults = workers.filter(worker => {
+        } else if (rawInput.length < 3) {
+          const strictShortResults = workers?.filter(worker => {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
@@ -290,7 +290,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
           });
           setNearbyWorkers(strictShortResults);
         } else {
-          const fuzzyResults = workers.filter(worker => {
+          const fuzzyResults = workers?.filter(worker => {
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
@@ -312,16 +312,16 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
             // Simple Levenshtein distance / typo handling hook for broken words
             const words = finalQuery.split(/\s+/);
             return words.every(word => {
-              if (word?.length < 3) return searchTargetText.includes(word);
+              if (word.length < 3) return searchTargetText.includes(word);
               // Returns true if a keyword segment closely matches a chunk of the profile text
               return searchTargetText.split(/\s+/).some(targetWord => {
                 if (targetWord.includes(word) || word.includes(targetWord)) return true;
                 // Fallback for single character typos (e.g., 'eletric' vs 'electric')
                 let distance = 0;
-                for (let i = 0; i < Math.min(word?.length, targetWord?.length); i++) {
+                for (let i = 0; i < Math.min(word.length, targetWord?.length); i++) {
                   if (word[i] !== targetWord[i]) distance++;
                 }
-                return distance <= 1 && Math.abs(word?.length - targetWord?.length) <= 1;
+                return distance <= 1 && Math.abs(word.length - targetWord?.length) <= 1;
               });
             });
           });
@@ -593,7 +593,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
               <View style={{ padding: 40, alignItems: 'center' }}>
                 <Text style={{ color: COLORS.textMuted }}>Searching for nearby providers...</Text>
               </View>
-            ) : (nearbyWorkers || []).length > 0 ? (
+            ) : (nearbyWorkers || [])?.length > 0 ? (
               <View style={{ gap: 12 }}>
                 <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 }}>Search Results</Text>
                 {nearbyWorkers?.map((worker) => (
@@ -608,42 +608,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
           </View>
         </ResponsiveContainer>
       </ScrollView>
-
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TextInput
-                value={newMessage}
-                onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -902,42 +866,6 @@ function TrustScreen({ onNavigate, showAlert }) {
           </View>
         </View>
       </ScrollView>
-
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TextInput
-                value={newMessage}
-                onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1050,42 +978,6 @@ function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
         </View>
         </View>
       </ScrollView>
-
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TextInput
-                value={newMessage}
-                onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1356,7 +1248,7 @@ function AuthScreen({ onAuth, showAlert }) {
         showAlert("Please provide your phone number and create a password.");
         return;
       }
-      if (password?.length < 6) {
+      if (password.length < 6) {
         showAlert("Password must be at least 6 characters long.");
         return;
       }
@@ -1625,42 +1517,6 @@ function AuthScreen({ onAuth, showAlert }) {
           </View>
         </View>
       </ScrollView>
-
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TextInput
-                value={newMessage}
-                onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1874,7 +1730,6 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
       <Modal visible={isChatVisible} animationType="slide" transparent={true}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
@@ -1886,7 +1741,7 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
             </View>
 
             <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
+              {(messages || []).map((msg, idx) => {
                 const isMine = msg.sender_id === user?.id;
                 return (
                   <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
@@ -1898,18 +1753,21 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
 
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <TextInput
+                placeholder="Type a message..."
                 value={newMessage}
                 onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
+                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 10, padding: 12 }}
               />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
+              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 10 }}>
                 <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+
+
     </View>
   );
 }
@@ -1998,42 +1856,6 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
           </View>
         </View>
       </ScrollView>
-
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TextInput
-                value={newMessage}
-                onChangeText={setNewMessage}
-                placeholder="Type a message..."
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: '#0B5932', padding: 12, borderRadius: 12 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -2412,7 +2234,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                 ))
               )}
               <Text style={{ fontSize: 14, fontWeight: "700", color: "#64748B", marginBottom: 12, marginTop: 12 }}>PENDING VERIFICATIONS</Text>
-              {(pendingProviders || []).length === 0 ? (
+              {(pendingProviders || [])?.length === 0 ? (
                 <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No pending verifications</Text></View>
               ) : (
                 pendingProviders?.map(prov => (
@@ -2443,7 +2265,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                 {activeSubTab === "verification_queue" && (
                   <View>
                     <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E293B", marginBottom: 16 }}>Account Verification Queue</Text>
-                    {(pendingProviders || []).length === 0 ? (
+                    {(pendingProviders || [])?.length === 0 ? (
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center", marginBottom: 24 }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No pending profiles for review</Text></View>
                     ) : (
                       pendingProviders?.map(prov => (
@@ -2454,7 +2276,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       ))
                     )}
                     <Text style={{ fontSize: 18, fontWeight: "800", color: "#1E293B", marginBottom: 16, marginTop: 12 }}>🤝 Community Vouching Queue</Text>
-                    {(pendingVouching || []).length === 0 ? (
+                    {(pendingVouching || [])?.length === 0 ? (
                       <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No community vouchers pending</Text></View>
                     ) : (
                       pendingVouching?.map(vouch => (
@@ -2490,7 +2312,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
               </View>
               <View style={{ backgroundColor: "#0F172A", borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: "#334155", elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: "#1E293B", paddingBottom: 8 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" }} /><Text style={{ color: "#94A3B8", fontSize: 11, fontWeight: "700", letterSpacing: 1 }}>TTY1 / SYSTEM_SERVICE / STDOUT</Text></View>
-                {(logs || []).length === 0 ? (
+                {(logs || [])?.length === 0 ? (
                   <Text style={{ color: "#475569", fontSize: 12, fontStyle: "italic", textAlign: "center", padding: 20 }}>- No active log stream -</Text>
                 ) : (
                   logs?.map(log => (
@@ -2667,7 +2489,8 @@ function ProviderInboxScreen({ user, showAlert }) {
               <ScrollView style={{ flex: 1, padding: 16 }}>
                 {messages.map((msg, idx) => {
                   const isMine = msg.sender_id === user?.id;
-                  return (
+
+return (
                     <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? COLORS.primary : '#fff', padding: 12, borderRadius: 14, marginBottom: 10, maxWidth: '80%', elevation: 1 }}>
                       <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
                       <Text style={{ fontSize: 9, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted, marginTop: 4, textAlign: 'right' }}>
@@ -2706,8 +2529,24 @@ function ProviderInboxScreen({ user, showAlert }) {
 export default function App() {
   const [customAlert, setCustomAlert] = useState({ visible: false, message: '' });
   const showAlert = (message) => setCustomAlert({ visible: true, message });
-  const [workers, setWorkers] = useState([]);
+  const [workers, setWorkers] = useState(null);
 
+  useEffect(() => {
+    const fetchInitialWorkers = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/match/nearby`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.workers)) {
+          setWorkers(data.workers);
+        } else {
+          setWorkers([]);
+        }
+      } catch (e) {
+        setWorkers([]);
+      }
+    };
+    fetchInitialWorkers();
+  }, []);
   const [screen, setScreen] = useState("home");
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -2878,11 +2717,11 @@ export default function App() {
 
   if (!workers || !Array.isArray(workers)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-gray-500 font-medium">Loading Wantok Workforce profiles safely...</p>
-        </div>
-      </div>
+      <View style={{ flex: 1, backgroundColor: '#F9FAFB', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ color: '#6B7280', fontWeight: '500' }}>Loading Wantok Workforce profiles safely...</Text>
+        </View>
+      </View>
     );
   }
 
@@ -3037,11 +2876,11 @@ function WorkerCard({ worker, onPress }) {
             </Text>
                         {(() => {
               // Check every possible database key variation for the registered signup number
-              const registeredNumber = worker.phone ||
-                                       worker.phoneNumber ||
-                                       worker.mobile ||
-                                       worker.phone_number ||
-                                       (worker.username && /^\d+$/.test(worker.username) ? worker.username : '');
+              const registeredNumber = worker?.phone ||
+                                       worker?.phoneNumber ||
+                                       worker?.mobile ||
+                                       worker?.phone_number ||
+                                       (worker?.username && /^\d+$/.test(worker?.username) ? worker?.username : '');
 
               if (registeredNumber) {
                 return (
