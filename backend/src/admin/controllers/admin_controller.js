@@ -250,8 +250,6 @@ class AdminController {
       return res.status(500).json({ error: 'Failed to override queue' });
     }
   }
-    }
-  }
 
   static async getSettings(req, res) {
     try {
