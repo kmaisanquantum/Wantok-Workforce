@@ -78,7 +78,7 @@ class MatchWorker {
 
       // PostGIS query to find available providers with matching skill
       const candidateQuery = `
-        SELECT u.id,
+        SELECT u.id, u.name,
                CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
@@ -100,17 +100,39 @@ class MatchWorker {
 
       console.log(`🤖 [MatchWorker] Found ${candidates.length} candidate(s) for job ${job.id}`);
 
+      // 1. Propose all matches for scoring/record
       for (const candidate of candidates) {
-        // Simple scoring: 100 - distance_km (capped at 0)
-        const score = Math.max(0, 100 - candidate.distance_km);
-
+        const score = Math.max(0, 100 - (candidate.distance_km || 0));
         await pool.query(
           'INSERT INTO matches (booking_id, provider_id, score, status) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
           [job.id, candidate.id, score, 'proposed']
         );
       }
 
-      console.log(`✅ [MatchWorker] Successfully proposed matches for job ${job.id}`);
+      // 2. AUTOMATION: Select the best candidate (first one from order) and assign
+      const bestCandidate = candidates[0];
+
+      console.log(`🤖 [MatchWorker] Automatically assigning provider ${bestCandidate.name} (${bestCandidate.id}) to job ${job.id}`);
+
+      await pool.query(
+        "UPDATE bookings SET provider_id = $1, status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [bestCandidate.id, job.id]
+      );
+
+      await pool.query(
+        "UPDATE matches SET status = 'accepted' WHERE booking_id = $1 AND provider_id = $2",
+        [job.id, bestCandidate.id]
+      );
+
+      // Audit log entry
+      try {
+        await pool.query(
+          "INSERT INTO audit_logs (level, action) VALUES ('INFO', $1)",
+          [`Automated match: Assigned provider ${bestCandidate.id} to booking ${job.id}`]
+        );
+      } catch (logErr) {}
+
+      console.log(`✅ [MatchWorker] Successfully automated assignment for job ${job.id}`);
     } catch (error) {
       console.error(`❌ [MatchWorker] Failed to match job ${job.id}:`, error.message);
     }

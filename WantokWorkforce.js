@@ -2319,24 +2319,33 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
               {queue?.length === 0 ? (
                 <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 12, marginBottom: 24, alignItems: "center" }}><Text style={{ color: "#94A3B8", fontSize: 13 }}>No active matching transactions</Text></View>
               ) : (
-                queue?.map(item => (
-                  <View key={item?.id || Math.random()} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: item?.status === 'completed' ? "#10B981" : (item?.status === 'cancelled' ? "#EF4444" : "#3B82F6") }}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <View>
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item?.service_type} Match</Text>
-                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item?.customer_name} ➔ {item?.provider_name || (item?.suggested_provider_name ? `Searching... (Best Match: ${item.suggested_provider_name})` : 'Searching...')}</Text>
-                        <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>ID: {item.id} • {new Date(item?.created_at).toLocaleString()}</Text>
+                queue?.map(item => {
+                  const isAssigned = !!item.provider_id || item.status === 'accepted';
+                  const statusLabel = item.status === 'accepted' ? 'ASSIGNED' : (item.status || "").toUpperCase();
+                  const borderColor = item.status === 'completed' ? "#10B981" : (item.status === 'cancelled' ? "#EF4444" : (isAssigned ? "#F59E0B" : "#3B82F6"));
+
+                  return (
+                    <View key={item?.id || Math.random()} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: borderColor }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item?.service_type} Match</Text>
+                          <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item?.customer_name} ➔ {item?.provider_name || 'Automating...'}</Text>
+                          <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>ID: {item.id} • {new Date(item?.created_at).toLocaleString()}</Text>
+                        </View>
+                        <View style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#475569" }}>{statusLabel}</Text></View>
                       </View>
-                      <View style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#475569" }}>{(item?.status || "").toUpperCase()}</Text></View>
-                    </View>
-                    {item?.status === 'pending' && (
+
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete', providerId: item.suggested_provider_id })} disabled={!(item?.provider_id || item?.suggested_provider_id)} style={{ flex: 1, backgroundColor: (item?.provider_id || item?.suggested_provider_id) ? "#10B981" : "#D1D5DB", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Force Terminate</Text></TouchableOpacity>
+                         {(item.status === 'pending' || item.status === 'accepted') && (
+                           <TouchableOpacity onPress={() => handleUserAction(item.customer_id, 'flag')} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
+                         )}
+                         {item.status === 'pending' && (
+                           <TouchableOpacity onPress={() => handleUserAction(item.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>Cancel Match</Text></TouchableOpacity>
+                         )}
                       </View>
-                    )}
-                  </View>
-                ))
+                    </View>
+                  );
+                })
               )}
               <Text style={{ fontSize: 14, fontWeight: "700", color: "#64748B", marginBottom: 12, marginTop: 12 }}>PENDING VERIFICATIONS</Text>
               {(pendingProviders || [])?.length === 0 ? (

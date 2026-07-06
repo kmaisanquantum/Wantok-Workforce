@@ -1,0 +1,14 @@
+I have automated the matching process and refactored the Admin Queue.
+
+Key Changes:
+1. **MatchWorker (backend/src/workers/match_worker.js)**:
+   - Automated the transition from 'PENDING' to 'ASSIGNED' (database status 'accepted').
+   - The worker now picks the highest-scoring candidate and binds them to the booking immediately.
+   - Added audit logs for automated assignments.
+
+2. **Frontend (WantokWorkforce.js)**:
+   - Updated the Admin Queue UI to display 'ASSIGNED' status.
+   - Replaced the 'Manually Complete' bottleneck with 'Flag / Review' and 'Cancel Match' actions, enabling administrative oversight without blocking the workflow.
+   - Corrected color coding for assigned jobs in the queue.
+
+This removes the manual bottleneck while maintaining screening capabilities.
