@@ -2331,7 +2331,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                     </View>
                     {item?.status === 'pending' && (
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete', providerId: item.suggested_provider_id })} style={{ flex: 1, backgroundColor: "#10B981", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete', providerId: item.suggested_provider_id })} disabled={!(item?.provider_id || item?.suggested_provider_id)} style={{ flex: 1, backgroundColor: (item?.provider_id || item?.suggested_provider_id) ? "#10B981" : "#D1D5DB", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
                         <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Force Terminate</Text></TouchableOpacity>
                       </View>
                     )}
