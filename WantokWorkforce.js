@@ -270,35 +270,46 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
         if (!rawInput) {
           // Filter out admins even when the search bar is empty
           const activeProvidersOnly = workers?.filter(worker => {
+            // 1. Strict Exclusions
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            const isNotGeneralTrade = (worker.category || '').toLowerCase().trim() !== 'general trade';
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
-            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
-            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
-            return isNotAdmin && isNotGeneralTrade && isNotMockProvider;
+            if (!isNotMockProvider || !isNotGeneralTrade || !isNotAdmin) {
+              return false; // Permanently drop them before checking search words
+            }
+            return true;
           });
           setNearbyWorkers(activeProvidersOnly);
         } else if (rawInput.length < 3) {
           const strictShortResults = workers?.filter(worker => {
+            // 1. Strict Exclusions
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            const isNotGeneralTrade = (worker.category || '').toLowerCase().trim() !== 'general trade';
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
-            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
-            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            if (!isNotMockProvider || !isNotGeneralTrade || !isNotAdmin) {
+              return false; // Permanently drop them before checking search words
+            }
             const matchesSearchCriteria = (worker.name || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.role || '').toLowerCase().startsWith(normalizedInput) ||
                                   (worker.category || '').toLowerCase().startsWith(normalizedInput);
-            return isNotAdmin && isNotGeneralTrade && isNotMockProvider && matchesSearchCriteria;
+            return matchesSearchCriteria;
           });
           setNearbyWorkers(strictShortResults);
         } else {
           const fuzzyResults = workers?.filter(worker => {
+            // 1. Strict Exclusions
+            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
+            const isNotGeneralTrade = (worker.category || '').toLowerCase().trim() !== 'general trade';
             const isNotAdmin = (worker.role || '').toLowerCase() !== 'admin' &&
                                (worker.role || '').toLowerCase() !== 'master admin' &&
                                !worker.isAdmin;
-            const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';
-            const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';
-            if (!isNotAdmin || !isNotGeneralTrade || !isNotMockProvider) return false;
+            if (!isNotMockProvider || !isNotGeneralTrade || !isNotAdmin) {
+              return false; // Permanently drop them before checking search words
+            }
 
             // Run the deep fuzzy, synonym, and stemming filter when input is 3 or more characters
             const searchTargetText = [
@@ -2174,6 +2185,15 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
               ) : users?.length === 0 ? (
                 <View style={{ padding: 40, alignItems: "center" }}><Text style={{ color: "#64748B", fontSize: 14 }}>No users found.</Text></View>
               ) : users?.filter(u => {
+                  // 1. Strict Exclusions
+                  const isNotMockProvider = (u.name || '').toLowerCase().trim() !== 'mock provider';
+                  const isNotGeneralTrade = (u.category || u.trade_type || '').toLowerCase().trim() !== 'general trade';
+                  const isNotAdmin = (u.role || '').toLowerCase() !== 'admin' &&
+                                     (u.role || '').toLowerCase() !== 'master admin' &&
+                                     !u.isAdmin;
+                  if (!isNotMockProvider || !isNotGeneralTrade || !isNotAdmin) {
+                    return false; // Permanently drop them before checking search words
+                  }
                   const q = (searchQuery || "").toLowerCase();
                   return (u?.name || "").toLowerCase().includes(q) || (u?.email || "").toLowerCase().includes(q) || (u.phone_number || "").toLowerCase().includes(q);
                 })?.map(u => (
