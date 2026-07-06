@@ -1,4 +1,0 @@
-- Implemented exact exclusion logic for "General Trade" category in `WantokWorkforce.js` across three search states (empty, short keyword, and deep fuzzy).
-- Standardized filter conditions to strictly follow user-provided templates, ensuring `isNotAdmin` and `isNotGeneralTrade` are both required for a worker to be included in results.
-- Verified that `npm run build` (Expo export) successfully validates JSX syntax and bundling, serving as a reliable gatekeeper for frontend regressions.
-- Identified that `isNotMockProvider` check should be removed when the user specifies an "exact" condition structure that excludes it.
