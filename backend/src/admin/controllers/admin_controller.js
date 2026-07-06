@@ -230,22 +230,32 @@ class AdminController {
   static async overrideQueue(req, res) {
     try {
       const { matchId, action, providerId } = req.body;
+      console.log(`[AdminController] Overriding queue for booking ${matchId}. Action: ${action}, RequestProviderId: ${providerId}`);
+
       let newStatus = action === 'force_complete' ? 'completed' : 'cancelled';
       let finalProviderId = providerId;
 
       if (action === 'force_complete') {
-        // Auto-assign best match if providerId is missing
-        if (!finalProviderId) {
+        // 1. Fetch current booking to check if provider is already assigned
+        const bookingCheck = await UserModel.getPool().query('SELECT provider_id FROM bookings WHERE id = $1', [matchId]);
+        if (bookingCheck.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
+
+        let existingProviderId = bookingCheck.rows[0].provider_id;
+
+        // 2. Auto-assign best match if providerId is missing and not already assigned
+        if (!finalProviderId && !existingProviderId) {
           const matchQuery = 'SELECT provider_id FROM matches WHERE booking_id = $1 ORDER BY score DESC LIMIT 1';
           const { rows: matchRows } = await UserModel.getPool().query(matchQuery, [matchId]);
           if (matchRows.length > 0) {
             finalProviderId = matchRows[0].provider_id;
+            console.log(`[AdminController] Auto-assigning best match provider ${finalProviderId} to booking ${matchId}`);
           }
         }
 
-        // CRITICAL: Block completion if NO provider is assigned
-        if (!finalProviderId) {
-          return res.status(400).json({ error: 'Cannot complete a job with no assigned provider. Please wait for a match candidate.' });
+        // 3. CRITICAL: Block completion if NO provider is assigned or found
+        if (!finalProviderId && !existingProviderId) {
+          console.warn(`[AdminController] Blocked completion of booking ${matchId}: No provider assigned or suggested match found.`);
+          return res.status(400).json({ error: 'Cannot complete a job with no assigned provider. Please wait for a match candidate or provide a specific provider ID.' });
         }
       }
 
@@ -261,13 +271,15 @@ class AdminController {
       params.push(matchId);
 
       await UserModel.getPool().query(sql, params);
+
+      console.log(`[AdminController] Successfully updated booking ${matchId} to ${newStatus}. AssignedProvider: ${finalProviderId || 'already assigned'}`);
+
       return res.status(200).json({ success: true, message: 'Queue updated', assignedProviderId: finalProviderId });
     } catch (error) {
       console.error('Override Queue Error:', error);
       return res.status(500).json({ error: 'Failed to override queue' });
     }
   }
-
   static async getSettings(req, res) {
     try {
       const { rows } = await UserModel.getPool().query('SELECT key, value, group_category FROM system_settings');
