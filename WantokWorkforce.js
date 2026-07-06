@@ -2124,7 +2124,10 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
         if (activeTab === "verification") { fetchPending(); fetchQueue(); }
         if (activeTab === "dashboard") fetchStats();
         setModalVisible(false);
-      } else { showAlert("Action failed"); }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showAlert(errData.error || "Action failed");
+      }
     } catch (e) { showAlert("Error connecting to server"); }
   };
 

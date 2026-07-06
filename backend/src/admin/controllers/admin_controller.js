@@ -233,12 +233,19 @@ class AdminController {
       let newStatus = action === 'force_complete' ? 'completed' : 'cancelled';
       let finalProviderId = providerId;
 
-      // Auto-assign best match if providerId is missing for completion
-      if (action === 'force_complete' && !finalProviderId) {
-        const matchQuery = 'SELECT provider_id FROM matches WHERE booking_id = $1 ORDER BY score DESC LIMIT 1';
-        const { rows: matchRows } = await UserModel.getPool().query(matchQuery, [matchId]);
-        if (matchRows.length > 0) {
-          finalProviderId = matchRows[0].provider_id;
+      if (action === 'force_complete') {
+        // Auto-assign best match if providerId is missing
+        if (!finalProviderId) {
+          const matchQuery = 'SELECT provider_id FROM matches WHERE booking_id = $1 ORDER BY score DESC LIMIT 1';
+          const { rows: matchRows } = await UserModel.getPool().query(matchQuery, [matchId]);
+          if (matchRows.length > 0) {
+            finalProviderId = matchRows[0].provider_id;
+          }
+        }
+
+        // CRITICAL: Block completion if NO provider is assigned
+        if (!finalProviderId) {
+          return res.status(400).json({ error: 'Cannot complete a job with no assigned provider. Please wait for a match candidate.' });
         }
       }
 
