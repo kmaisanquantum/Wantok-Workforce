@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -1661,6 +1661,18 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const fetchHistory = async () => {
@@ -1686,24 +1698,51 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
   }, [isChatVisible]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !user || !worker) return;
+    if (!newMessage.trim() && selectedFiles.length === 0) return;
+    if (!user || !worker) return;
+
     try {
-      const res = await fetch(`${API_BASE}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.token}`
-        },
-        body: JSON.stringify({
-          receiverId: worker.id, // Assuming worker.id is the recipient User ID for simplicity in this flow
+      // For each file, we'd normally upload to S3/Cloudinary first.
+      // Since this is a specialized task, we will simulate the file upload and send metadata.
+      // In a real production app, we would use FormData if the backend supports direct multipart.
+
+      const sendPayload = async (fileData = null) => {
+        const body = {
+          receiverId: worker.id,
           providerId: worker.id,
           text: newMessage.trim()
-        })
-      });
-      if (res.ok) {
-        setNewMessage("");
-        fetchHistory();
+        };
+        if (fileData) {
+          body.fileUrl = fileData.url;
+          body.fileName = fileData.name;
+          body.fileType = fileData.type;
+        }
+
+        const res = await fetch(`${API_BASE}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user.token}`
+          },
+          body: JSON.stringify(body)
+        });
+        return res.ok;
+      };
+
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          // Simulation: convert file to a local object URL for preview/demo
+          // In reality, this would be the URL from the file storage service
+          const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
+          await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
+        }
+      } else {
+        await sendPayload();
       }
+
+      setNewMessage("");
+      setSelectedFiles([]);
+      fetchHistory();
     } catch (e) {
       showAlert("Failed to send message");
     }
@@ -1759,14 +1798,53 @@ function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
               {(messages || []).map((msg, idx) => {
                 const isMine = msg.sender_id === user?.id;
                 return (
+
                   <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
+                    {msg.file_url && (
+                      <View style={{ marginBottom: 8 }}>
+                        {msg.file_type && msg.file_type.startsWith('image/') ? (
+                          <TouchableOpacity onPress={() => showAlert("Image preview modal here")}>
+                            <Image source={{ uri: msg.file_url }} style={{ width: 200, height: 150, borderRadius: 8, resizeMode: 'cover' }} />
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.open(msg.file_url, '_blank'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.05)', padding: 8, borderRadius: 8 }}>
+                            <Text style={{ fontSize: 20 }}>📄</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: isMine ? '#fff' : COLORS.text }}>{msg.file_name}</Text>
+                              <Text style={{ fontSize: 10, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted }}>{msg.file_type || 'Document'}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+
                     <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
                   </View>
                 );
               })}
             </ScrollView>
 
-            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+
+              {selectedFiles.length > 0 && (
+                <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {selectedFiles.map((file, fIdx) => (
+                      <View key={fIdx} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '600', maxWidth: 120 }} numberOfLines={1}>{file.name}</Text>
+                        <TouchableOpacity onPress={() => removeFile(fIdx)} style={{ backgroundColor: '#CBD5E1', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#fff' }}>×</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+<View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" style={{ display: 'none' }} />
+              <TouchableOpacity onPress={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 20 }}>📎</Text>
+              </TouchableOpacity>
+
               <TextInput
                 placeholder="Type a message..."
                 value={newMessage}
@@ -2389,6 +2467,18 @@ function CustomerInboxScreen({ user, showAlert }) {
   const [selectedConv, setSelectedConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   const fetchInbox = async () => {
     try {
@@ -2430,24 +2520,45 @@ function CustomerInboxScreen({ user, showAlert }) {
   }, [selectedConv]);
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedConv) return;
+    if (!replyText.trim() && selectedFiles.length === 0) return;
+    if (!selectedConv) return;
+
     try {
-      const res = await fetch(`${API_BASE}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({
+      const sendPayload = async (fileData = null) => {
+        const body = {
           receiverId: selectedConv.other_party_id,
           providerId: selectedConv.provider_id,
           text: replyText.trim()
-        })
-      });
-      if (res.ok) {
-        setReplyText("");
-        fetchChatHistory(selectedConv.other_party_id, selectedConv.provider_id);
+        };
+        if (fileData) {
+          body.fileUrl = fileData.url;
+          body.fileName = fileData.name;
+          body.fileType = fileData.type;
+        }
+
+        const res = await fetch(`${API_BASE}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          },
+          body: JSON.stringify(body)
+        });
+        return res.ok;
+      };
+
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
+          await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
+        }
+      } else {
+        await sendPayload();
       }
+
+      setReplyText("");
+      setSelectedFiles([]);
+      fetchChatHistory(selectedConv.other_party_id, selectedConv.provider_id);
     } catch (e) {
       showAlert("Failed to send reply");
     }
@@ -2518,7 +2629,27 @@ function CustomerInboxScreen({ user, showAlert }) {
                 {messages.map((msg, idx) => {
                   const isMine = msg.sender_id === user?.id;
                   return (
+
                     <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? COLORS.primary : '#fff', padding: 12, borderRadius: 14, marginBottom: 10, maxWidth: '80%', elevation: 1 }}>
+                      {msg.file_url && (
+                        <View style={{ marginBottom: 8 }}>
+                          {msg.file_type && msg.file_type.startsWith('image/') ? (
+                            <TouchableOpacity onPress={() => showAlert("Image preview modal here")}>
+                              <Image source={{ uri: msg.file_url }} style={{ width: 200, height: 150, borderRadius: 8, resizeMode: 'cover' }} />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.open(msg.file_url, '_blank'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.05)', padding: 8, borderRadius: 8 }}>
+                              <Text style={{ fontSize: 20 }}>📄</Text>
+                              <View style={{ flex: 1 }}>
+                                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: isMine ? '#fff' : COLORS.text }}>{msg.file_name}</Text>
+                                <Text style={{ fontSize: 10, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted }}>{msg.file_type || 'Document'}</Text>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+                      <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
+
                       <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
                       <Text style={{ fontSize: 9, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted, marginTop: 4, textAlign: 'right' }}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -2528,7 +2659,27 @@ function CustomerInboxScreen({ user, showAlert }) {
                 })}
               </ScrollView>
 
+
+              {selectedFiles.length > 0 && (
+                <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {selectedFiles.map((file, fIdx) => (
+                      <View key={fIdx} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '600', maxWidth: 120 }} numberOfLines={1}>{file.name}</Text>
+                        <TouchableOpacity onPress={() => removeFile(fIdx)} style={{ backgroundColor: '#CBD5E1', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#fff' }}>×</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               <View style={{ padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" style={{ display: 'none' }} />
+                <TouchableOpacity onPress={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 20 }}>📎</Text>
+                </TouchableOpacity>
                 <TextInput
                   value={replyText}
                   onChangeText={setReplyText}
@@ -2557,6 +2708,18 @@ function ProviderInboxScreen({ user, showAlert }) {
   const [selectedConv, setSelectedConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    setSelectedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const [loading, setLoading] = useState(false);
 
   const fetchInbox = async () => {
@@ -2599,24 +2762,45 @@ function ProviderInboxScreen({ user, showAlert }) {
   }, [selectedConv]);
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedConv) return;
+    if (!replyText.trim() && selectedFiles.length === 0) return;
+    if (!selectedConv) return;
+
     try {
-      const res = await fetch(`${API_BASE}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({
+      const sendPayload = async (fileData = null) => {
+        const body = {
           receiverId: selectedConv.other_party_id,
           providerId: user.id,
           text: replyText.trim()
-        })
-      });
-      if (res.ok) {
-        setReplyText("");
-        fetchChatHistory(selectedConv.other_party_id);
+        };
+        if (fileData) {
+          body.fileUrl = fileData.url;
+          body.fileName = fileData.name;
+          body.fileType = fileData.type;
+        }
+
+        const res = await fetch(`${API_BASE}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user?.token}`
+          },
+          body: JSON.stringify(body)
+        });
+        return res.ok;
+      };
+
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
+          await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
+        }
+      } else {
+        await sendPayload();
       }
+
+      setReplyText("");
+      setSelectedFiles([]);
+      fetchChatHistory(selectedConv.other_party_id);
     } catch (e) {
       showAlert("Failed to send reply");
     }
@@ -2684,7 +2868,27 @@ function ProviderInboxScreen({ user, showAlert }) {
                   const isMine = msg.sender_id === user?.id;
 
 return (
+
                     <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? COLORS.primary : '#fff', padding: 12, borderRadius: 14, marginBottom: 10, maxWidth: '80%', elevation: 1 }}>
+                      {msg.file_url && (
+                        <View style={{ marginBottom: 8 }}>
+                          {msg.file_type && msg.file_type.startsWith('image/') ? (
+                            <TouchableOpacity onPress={() => showAlert("Image preview modal here")}>
+                              <Image source={{ uri: msg.file_url }} style={{ width: 200, height: 150, borderRadius: 8, resizeMode: 'cover' }} />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.open(msg.file_url, '_blank'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.05)', padding: 8, borderRadius: 8 }}>
+                              <Text style={{ fontSize: 20 }}>📄</Text>
+                              <View style={{ flex: 1 }}>
+                                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: isMine ? '#fff' : COLORS.text }}>{msg.file_name}</Text>
+                                <Text style={{ fontSize: 10, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted }}>{msg.file_type || 'Document'}</Text>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+                      <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
+
                       <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
                       <Text style={{ fontSize: 9, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted, marginTop: 4, textAlign: 'right' }}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -2694,7 +2898,27 @@ return (
                 })}
               </ScrollView>
 
+
+              {selectedFiles.length > 0 && (
+                <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {selectedFiles.map((file, fIdx) => (
+                      <View key={fIdx} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '600', maxWidth: 120 }} numberOfLines={1}>{file.name}</Text>
+                        <TouchableOpacity onPress={() => removeFile(fIdx)} style={{ backgroundColor: '#CBD5E1', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#fff' }}>×</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               <View style={{ padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" style={{ display: 'none' }} />
+                <TouchableOpacity onPress={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 20 }}>📎</Text>
+                </TouchableOpacity>
                 <TextInput
                   value={replyText}
                   onChangeText={setReplyText}

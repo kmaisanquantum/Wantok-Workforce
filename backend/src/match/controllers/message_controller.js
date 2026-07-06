@@ -2,21 +2,21 @@ const UserModel = require('../../auth/models/user_model');
 
 class MessageController {
   static async sendMessage(req, res) {
-    const { receiverId, providerId, text } = req.body;
+    const { receiverId, providerId, text, fileUrl, fileName, fileType } = req.body;
     const senderId = req.user.id;
 
-    if (!receiverId || !providerId || !text) {
-      return res.status(400).json({ error: 'Missing required fields: receiverId, providerId, text' });
+    if (!receiverId || !providerId || (!text && !fileUrl)) {
+      return res.status(400).json({ error: 'Missing required fields: receiverId, providerId, and either text or fileUrl' });
     }
 
     try {
       const pool = UserModel.getPool();
       const sql = `
-        INSERT INTO messages (sender_id, receiver_id, provider_id, text)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO messages (sender_id, receiver_id, provider_id, text, file_url, file_name, file_type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `;
-      const { rows } = await pool.query(sql, [senderId, receiverId, providerId, text]);
+      const { rows } = await pool.query(sql, [senderId, receiverId, providerId, text || '', fileUrl || null, fileName || null, fileType || null]);
       return res.status(201).json(rows[0]);
     } catch (error) {
       console.error('❌ sendMessage Error:', error);
@@ -75,7 +75,7 @@ class MessageController {
           CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END as other_party_id,
           u.name as other_party_name,
           u.primary_skill as other_party_category,
-          m.text as last_message,
+          CASE WHEN m.text = '' AND m.file_url IS NOT NULL THEN '📎 Attachment: ' || m.file_name ELSE m.text END as last_message,
           m.created_at as last_message_time
         FROM messages m
         JOIN users u ON (CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END) = u.id
