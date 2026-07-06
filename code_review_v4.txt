@@ -1,0 +1,11 @@
+I have updated the search filtering logic in `WantokWorkforce.js` to block the "Mock Provider" user from appearing in search results.
+
+Changes:
+1. Added `const isNotMockProvider = (worker.name || '').toLowerCase().trim() !== 'mock provider';` to all three search filtering loops in `fetchNearbyProviders`:
+   - `activeProvidersOnly` (empty search)
+   - `strictShortResults` (short keywords)
+   - `fuzzyResults` (deep fuzzy search)
+2. Updated the return conditions to include `isNotMockProvider`.
+3. Verified the implementation with `npm run build`.
+
+This ensures that test/mock data is hidden from customers using the platform.
