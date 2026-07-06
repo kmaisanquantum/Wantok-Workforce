@@ -204,24 +204,52 @@ class AdminController {
     }
   }
 
+
   static async getQueue(req, res) {
     try {
-      const query = 'SELECT b.*, c.name as customer_name, p.name as provider_name FROM bookings b LEFT JOIN users c ON b.customer_id = c.id LEFT JOIN users p ON b.provider_id = p.id ORDER BY b.created_at DESC';
+      const query = `
+        SELECT b.*, c.name as customer_name, p.name as provider_name,
+               m.provider_id as suggested_provider_id, mp.name as suggested_provider_name
+        FROM bookings b
+        LEFT JOIN users c ON b.customer_id = c.id
+        LEFT JOIN users p ON b.provider_id = p.id
+        LEFT JOIN LATERAL (
+            SELECT provider_id FROM matches WHERE booking_id = b.id ORDER BY score DESC LIMIT 1
+        ) m ON b.provider_id IS NULL
+        LEFT JOIN users mp ON m.provider_id = mp.id
+        ORDER BY b.created_at DESC
+      `;
       const { rows } = await UserModel.getPool().query(query);
       return res.status(200).json({ success: true, data: rows });
     } catch (error) {
+      console.error('Get Queue Error:', error);
       return res.status(500).json({ error: 'Failed to fetch queue' });
     }
   }
 
   static async overrideQueue(req, res) {
     try {
-      const { matchId, action } = req.body;
+      const { matchId, action, providerId } = req.body;
       let newStatus = action === 'force_complete' ? 'completed' : 'cancelled';
-      await UserModel.getPool().query('UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newStatus, matchId]);
-      return res.status(200).json({ success: true, message: "Queue updated" });
+
+      let sql = 'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP';
+      let params = [newStatus];
+
+      if (providerId && action === 'force_complete') {
+        sql += ', provider_id = $' + (params.length + 1);
+        params.push(providerId);
+      }
+
+      sql += ' WHERE id = $' + (params.length + 1);
+      params.push(matchId);
+
+      await UserModel.getPool().query(sql, params);
+      return res.status(200).json({ success: true, message: 'Queue updated' });
     } catch (error) {
+      console.error('Override Queue Error:', error);
       return res.status(500).json({ error: 'Failed to override queue' });
+    }
+  }
     }
   }
 

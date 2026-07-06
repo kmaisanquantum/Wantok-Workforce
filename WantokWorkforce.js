@@ -2321,14 +2321,14 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <View>
                         <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item?.service_type} Match</Text>
-                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item?.customer_name} ➔ {item?.provider_name || 'Searching...'}</Text>
+                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{item?.customer_name} ➔ {item?.provider_name || (item?.suggested_provider_name ? `Searching... (Best Match: ${item.suggested_provider_name})` : 'Searching...')}</Text>
                         <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>ID: {item.id} • {new Date(item?.created_at).toLocaleString()}</Text>
                       </View>
                       <View style={{ backgroundColor: "#F1F5F9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}><Text style={{ fontSize: 10, fontWeight: "800", color: "#475569" }}>{(item?.status || "").toUpperCase()}</Text></View>
                     </View>
                     {item?.status === 'pending' && (
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
-                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete' })} style={{ flex: 1, backgroundColor: "#10B981", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'force_complete', providerId: item.suggested_provider_id })} style={{ flex: 1, backgroundColor: "#10B981", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Manually Complete</Text></TouchableOpacity>
                         <TouchableOpacity onPress={() => handleUserAction(item?.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#EF4444", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Force Terminate</Text></TouchableOpacity>
                       </View>
                     )}
