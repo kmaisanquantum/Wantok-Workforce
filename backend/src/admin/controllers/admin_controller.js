@@ -231,20 +231,30 @@ class AdminController {
     try {
       const { matchId, action, providerId } = req.body;
       let newStatus = action === 'force_complete' ? 'completed' : 'cancelled';
+      let finalProviderId = providerId;
+
+      // Auto-assign best match if providerId is missing for completion
+      if (action === 'force_complete' && !finalProviderId) {
+        const matchQuery = 'SELECT provider_id FROM matches WHERE booking_id = $1 ORDER BY score DESC LIMIT 1';
+        const { rows: matchRows } = await UserModel.getPool().query(matchQuery, [matchId]);
+        if (matchRows.length > 0) {
+          finalProviderId = matchRows[0].provider_id;
+        }
+      }
 
       let sql = 'UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP';
       let params = [newStatus];
 
-      if (providerId && action === 'force_complete') {
+      if (finalProviderId && action === 'force_complete') {
         sql += ', provider_id = $' + (params.length + 1);
-        params.push(providerId);
+        params.push(finalProviderId);
       }
 
       sql += ' WHERE id = $' + (params.length + 1);
       params.push(matchId);
 
       await UserModel.getPool().query(sql, params);
-      return res.status(200).json({ success: true, message: 'Queue updated' });
+      return res.status(200).json({ success: true, message: 'Queue updated', assignedProviderId: finalProviderId });
     } catch (error) {
       console.error('Override Queue Error:', error);
       return res.status(500).json({ error: 'Failed to override queue' });
