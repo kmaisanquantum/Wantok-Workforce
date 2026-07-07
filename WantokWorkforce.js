@@ -887,6 +887,11 @@ function TrustScreen({ onNavigate, showAlert }) {
 
 function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
   const [bookings, setBookings] = useState([]);
+  useEffect(() => {
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 15000);
+    return () => clearInterval(interval);
+  }, []);
   const [loading, setLoading] = useState(false);
 
   const fetchBookings = async () => {
