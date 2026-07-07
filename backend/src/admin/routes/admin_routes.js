@@ -39,7 +39,7 @@ router.get('/queue', ...adminAuth, AdminController.getQueue);
 router.post('/queue/override', ...adminAuth, AdminController.overrideQueue);
 
 // New Match Moderation Route
-router.post('/matches/:matchId/review', ...adminAuth, AdminController.reviewMatch);
+router.post('/queue/review', ...adminAuth, AdminController.reviewMatch);
 
 router.get('/settings', ...adminAuth, AdminController.getSettings);
 router.post('/settings', ...adminAuth, AdminController.updateSettings);

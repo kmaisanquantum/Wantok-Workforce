@@ -42,7 +42,6 @@ class AdminController {
 
   static async forceSyncUsers(req, res) {
     try {
-      // Logic to sync user roles or metadata if needed
       return res.status(200).json({ success: true, message: 'User synchronization triggered' });
     } catch (error) {
       return res.status(500).json({ error: 'Sync failed' });
@@ -175,7 +174,7 @@ class AdminController {
   static async reviewMatch(req, res) {
     let client;
     try {
-      const { matchId } = req.params;
+      const { matchId } = req.body;
       const { action, internalNotes } = req.body;
       const adminId = req.user.id;
 
@@ -188,9 +187,17 @@ class AdminController {
       );
 
       if (action === 'FORCE_TERMINATED') {
-        await client.query('UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['cancelled', matchId]);
+        await client.query('UPDATE bookings SET status = $1, is_under_review = false, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['cancelled', matchId]);
       } else if (action === 'FORCE_COMPLETED') {
-        await client.query('UPDATE bookings SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['completed', matchId]);
+        await client.query('UPDATE bookings SET status = $1, is_under_review = false, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['completed', matchId]);
+      } else if (action === 'FLAGGED') {
+        await client.query('UPDATE bookings SET status = $1, is_under_review = true, updated_at = CURRENT_TIMESTAMP WHERE id = $2', ['FLAGGED', matchId]);
+      } else if (action === 'CLEARED') {
+        // Find if it has a provider already
+        const { rows } = await client.query('SELECT provider_id FROM bookings WHERE id = $1', [matchId]);
+        const hasProvider = rows.length > 0 && rows[0].provider_id;
+        const nextStatus = hasProvider ? 'assigned' : 'pending';
+        await client.query('UPDATE bookings SET status = $1, is_under_review = false, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [nextStatus, matchId]);
       }
 
       await client.query('COMMIT');
