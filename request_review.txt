@@ -1,6 +1,0 @@
-I have updated the Customer Module search in WantokWorkforce.js to exclude admin users.
-
-Changes:
-1. WantokWorkforce.js: Modified the filtering logic in fetchNearbyProviders to exclude users with 'admin' or 'master admin' roles, or an 'isAdmin' flag.
-2. The exclusion applies to all search states: empty search, short input (< 3 chars), and deep fuzzy matching.
-3. Verified clean build and syntax.
