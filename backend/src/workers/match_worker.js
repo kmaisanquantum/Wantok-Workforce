@@ -1,3 +1,4 @@
+const redisClient = require('../../db/redis_init');
 const UserModel = require('../auth/models/user_model');
 const AdminController = require('../admin/controllers/admin_controller');
 
@@ -132,7 +133,22 @@ class MatchWorker {
         );
       } catch (logErr) {}
 
-      console.log(`✅ [MatchWorker] Successfully automated assignment for job ${job.id}`);
+
+      // 3. NOTIFICATION: Publish to Redis for real-time Socket.io broadcast
+      if (redisClient) {
+        const payload = {
+          type: 'booking_assigned',
+          bookingId: job.id,
+          customerId: job.customer_id,
+          providerId: bestCandidate.id,
+          providerName: bestCandidate.name,
+          serviceType: job.service_type,
+          timestamp: new Date().toISOString()
+        };
+        redisClient.publish('match_assigned', JSON.stringify(payload));
+      }
+
+      console.log(`✅ [MatchWorker] Successfully automated assignment and published notification for job ${job.id}`);
     } catch (error) {
       console.error(`❌ [MatchWorker] Failed to match job ${job.id}:`, error.message);
     }

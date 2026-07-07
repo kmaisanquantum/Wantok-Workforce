@@ -26,6 +26,7 @@ const messageRoutes = require('./src/match/routes/message_routes');
 const UserModel = require('./src/auth/models/user_model');
 const { initializeDatabase } = require('./db/db_init');
 const redisClient = require('./db/redis_init');
+const MatchWorker = require('./src/workers/match_worker');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'wantok-development-secret-2024';
 
@@ -50,6 +51,26 @@ try {
   // Dedicated subscriber for job_alerts
   const jobSubscriber = pubClient.duplicate();
   jobSubscriber.subscribe('job_alerts');
+
+  // Dedicated subscriber for match_assigned
+  const matchSubscriber = pubClient.duplicate();
+  matchSubscriber.subscribe('match_assigned');
+  matchSubscriber.on('message', (channel, message) => {
+    if (channel === 'match_assigned') {
+      try {
+        const payload = JSON.parse(message);
+        console.log(`📢 Match Assigned: Booking ${payload.bookingId} -> Provider ${payload.providerId}`);
+        // Broadcast to relevant users
+        io.to(`user_${payload.customerId}`).emit('notification', payload);
+        io.to(`user_${payload.providerId}`).emit('notification', payload);
+        // Also broadcast the specific booking update
+        io.emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
+      } catch (e) {
+        console.error('❌ Notification Error:', e.message);
+      }
+    }
+  });
+
   jobSubscriber.on('message', (channel, message) => {
     if (channel === 'job_alerts') {
       try {
@@ -94,6 +115,14 @@ io.use(async (socket, next) => {
 // Socket.io Connection Handling & Room Management
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id, 'User:', socket.user?.email);
+
+
+  socket.on('join_user_room', (userId) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+      console.log(`👤 Socket ${socket.id} joined private room: user_${userId}`);
+    }
+  });
 
   socket.on('join_trade_room', (trade) => {
     if (trade) {
@@ -197,6 +226,9 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
     if (pool) {
       await initializeDatabase(pool);
       console.log('✅ Backend is ready and database is synced.');
+      const worker = new MatchWorker();
+      worker.start();
+      console.log('🤖 Background MatchWorker started.');
     } else {
       console.warn('⚠️ Database pool not initialized. Migration bypassed.');
     }
