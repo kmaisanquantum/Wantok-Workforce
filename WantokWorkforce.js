@@ -2120,6 +2120,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
       else if (action === 'update_settings') {
         const key = Object.keys(data)[0];
         res = await fetch(`${API_BASE}/admin/settings`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify({ key, value: data[key] }) });
+      else if (action === "review_match") res = await fetch(`${API_BASE}/admin/matches/${userId}/review`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify(data) });
       } else if (action === "release_payout") res = await fetch(`${API_BASE}/admin/release-payout/${userId}`, { method: "POST", headers: { "Authorization": `Bearer ${adminToken}` } });
       else if (action === "refund_escrow") res = await fetch(`${API_BASE}/admin/refund-escrow/${userId}`, { method: "POST", headers: { "Authorization": `Bearer ${adminToken}` } });
       else if (action === 'queue_override') res = await fetch(`${API_BASE}/admin/queue/override`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify(data) });
@@ -2342,7 +2343,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
 
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
                          {(item.status === 'pending' || item.status === 'accepted') && (
-                           <TouchableOpacity onPress={() => handleUserAction(item.customer_id, 'flag')} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
+                           <TouchableOpacity onPress={() => handleUserAction(item.id, 'review_match', { action: 'FLAGGED', internalNotes: 'Flagged from monitoring queue' })} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
                          )}
                          {item.status === 'pending' && (
                            <TouchableOpacity onPress={() => handleUserAction(item.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>Cancel Match</Text></TouchableOpacity>
