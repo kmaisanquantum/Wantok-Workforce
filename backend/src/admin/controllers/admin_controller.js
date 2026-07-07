@@ -2,6 +2,23 @@ const UserModel = require('../../auth/models/user_model');
 const bcrypt = require('bcrypt');
 
 class AdminController {
+
+  static async getInternalSetting(key, defaultValue) {
+    try {
+      const query = 'SELECT value FROM system_settings WHERE key = $1';
+      const { rows } = await UserModel.getPool().query(query, [key]);
+      if (rows.length === 0) return defaultValue;
+
+      const val = rows[0].value;
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+      if (!isNaN(val) && val.trim() !== '') return parseFloat(val);
+      return val;
+    } catch (error) {
+      console.error("Error fetching internal setting " + key + ":", error);
+      return defaultValue;
+    }
+  }
   static async getDashboardMetrics(req, res) {
     try {
       // Use user_roles for accurate, exclusive counts
