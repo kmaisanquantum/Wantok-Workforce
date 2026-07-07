@@ -3,12 +3,6 @@ const router = express.Router();
 const AdminController = require('../controllers/admin_controller');
 const { authMiddleware, roleCheckMiddleware } = require('../../auth/middlewares/auth');
 
-/**
- * Production-ready Admin Routes
- * Implements self-healing metrics and secure role-based access
- */
-
-// Diagnostic / Dashboard Metrics (Protected by Auth but optimized for speed)
 const adminAuth = [authMiddleware, roleCheckMiddleware(["admin"])];
 
 // PART A: Sovereign Financial Ledger
@@ -32,12 +26,20 @@ router.put('/users/:userId', ...adminAuth, AdminController.updateUser);
 router.delete('/users/:userId', ...adminAuth, AdminController.deleteUser);
 
 router.get('/pending-providers', ...adminAuth, AdminController.getPendingProviders);
-router.get('/pending-vouching', ...adminAuth, AdminController.getPendingVouching);router.post('/vouch/:vouchId/approve', ...adminAuth, AdminController.approveVouch);
+router.get('/pending-vouching', ...adminAuth, AdminController.getPendingVouching);
+router.post('/vouch/:vouchId/approve', ...adminAuth, AdminController.approveVouch);
 router.post('/providers/:providerId/approve', ...adminAuth, AdminController.approveProvider);
+
+// Standardized Flagging Route (Matches Frontend)
+router.patch('/flag-user/:userId', ...adminAuth, AdminController.flagUser);
+// Legacy/Alternative Route Support
 router.post('/users/:userId/flag', ...adminAuth, AdminController.flagUser);
 
 router.get('/queue', ...adminAuth, AdminController.getQueue);
 router.post('/queue/override', ...adminAuth, AdminController.overrideQueue);
+
+// New Match Moderation Route
+router.post('/queue/review', ...adminAuth, AdminController.reviewMatch);
 
 router.get('/settings', ...adminAuth, AdminController.getSettings);
 router.post('/settings', ...adminAuth, AdminController.updateSettings);
