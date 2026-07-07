@@ -66,28 +66,59 @@ const lockEscrow = async (req, res) => {
   let client;
   try {
     const { bookingId } = req.params;
+    const customerId = req.user.id;
+    console.log(`[Escrow] Attempting to lock escrow for booking ${bookingId} by user ${customerId}`);
+
     client = await UserModel.getPool().connect();
+
+    // 1. Pre-fetch booking to diagnose state
+    const { rows: preCheck } = await client.query('SELECT status, provider_id, price, customer_id FROM bookings WHERE id = $1', [bookingId]);
+    if (preCheck.length === 0) {
+      console.warn(`[Escrow] Booking ${bookingId} not found.`);
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const booking = preCheck[0];
+    console.log(`[Escrow] Current state for ${bookingId}: status=${booking.status}, provider_id=${booking.provider_id}, customer_id=${booking.customer_id}, price=${booking.price}`);
+
+    if (booking.customer_id !== customerId) {
+      console.warn(`[Escrow] Unauthorized attempt to pay for booking ${bookingId} by user ${customerId}`);
+      return res.status(403).json({ error: 'Unauthorized: You are not the customer for this booking' });
+    }
+
+    // Support both 'accepted' (manual/automated) and 'assigned' (automated) statuses
+    if (booking.status !== 'accepted' && booking.status !== 'assigned') {
+      console.warn(`[Escrow] Booking ${bookingId} has invalid status for escrow: ${booking.status}`);
+      return res.status(400).json({ error: `Job not ready for escrow. Current status: ${booking.status}` });
+    }
+
+    if (!booking.provider_id) {
+      console.error(`[Escrow] CRITICAL: Booking ${bookingId} has no assigned provider ID.`);
+      return res.status(400).json({ error: 'Cannot pay for a job with no assigned provider. Please wait for a worker to be matched.' });
+    }
+
     await client.query('BEGIN');
 
-    const bookingQuery = "UPDATE bookings SET status = 'in_progress', payout_status = 'escrowed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND status = 'accepted' RETURNING price";
+    const bookingQuery = "UPDATE bookings SET status = 'in_progress', payout_status = 'escrowed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND (status = 'accepted' OR status = 'assigned') RETURNING price";
     const { rows } = await client.query(bookingQuery, [bookingId]);
 
     if (rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Job not found or not ready for escrow' });
+      return res.status(404).json({ error: 'Job state changed during processing. Please try again.' });
     }
 
-    const price = parseFloat(rows[0].price);
+    const price = parseFloat(rows[0].price || 0);
 
     // Update global escrow flow
     await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'active_escrow_flow'", [price]);
 
     await client.query('COMMIT');
-    return res.status(200).json({ success: true, message: 'Escrow locked' });
+    console.log(`[Escrow] Successfully locked K${price} for booking ${bookingId}`);
+    return res.status(200).json({ success: true, message: 'Escrow locked and job started' });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
     console.error('Lock Escrow Error:', error);
-    return res.status(500).json({ error: 'Failed to lock escrow' });
+    return res.status(500).json({ error: 'Failed to lock escrow: ' + error.message });
   } finally {
     if (client) client.release();
   }
