@@ -1,3 +1,0 @@
-- Automated Matching: The 'MatchWorker' now autonomously assigns providers to pending bookings by selecting the best match candidate and updating the status to 'accepted'.
-- Admin Oversight: The 'System Monitoring Queue' has been refactored to focus on 'Flag / Review' actions for screening, removing the manual completion bottleneck.
-- Domain Mapping: Within the platform, the database status 'accepted' is mapped to 'ASSIGNED' for clear stakeholder communication.

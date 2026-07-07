@@ -1,1 +1,0 @@
-Fixed Expo Metro bundler configuration in app.json to resolve deployment errors.

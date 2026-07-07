@@ -1,4 +1,0 @@
-- Blocked "Mock Provider" user from customer search results in `WantokWorkforce.js`.
-- Implemented consistent filtering across all search modes (empty, short, fuzzy) by adding a name-based exclusion check.
-- Used `toLowerCase().trim()` to ensure robust matching against the mock user string.
-- Verified that the bundling pipeline (`npm run build`) remains healthy after logic updates.
