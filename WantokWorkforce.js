@@ -2107,7 +2107,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   }, [activeTab]);
 
   useEffect(() => { if (activeTab === "users") fetchUsers(); }, [roleFilter]);
-
+      <View style={{ backgroundColor: "#1E293B" }}>
   const handleUserAction = async (userId, action, data = {}) => {
     try {
       const adminToken = user?.token;
@@ -2117,13 +2117,36 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
       else if (action === 'create') res = await fetch(`${API_BASE}/admin/users`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify(data) });
       else if (action === 'approve') res = await fetch(`${API_BASE}/admin/approve-provider/${userId}`, { method: "PATCH", headers: { "Authorization": `Bearer ${adminToken}` } });
       else if (action === 'flag') res = await fetch(`${API_BASE}/admin/flag-user/${userId}`, { method: "PATCH", headers: { "Authorization": `Bearer ${adminToken}` } });
-      else if (action === 'update_settings') {
+      else if (action === "update_settings") {
         const key = Object.keys(data)[0];
-        res = await fetch(`${API_BASE}/admin/settings`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify({ key, value: data[key] }) });
-      else if (action === "review_match") res = await fetch(`${API_BASE}/admin/queue/review`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify(data) });
-      } else if (action === "release_payout") res = await fetch(`${API_BASE}/admin/release-payout/${userId}`, { method: "POST", headers: { "Authorization": `Bearer ${adminToken}` } });
-      else if (action === "refund_escrow") res = await fetch(`${API_BASE}/admin/refund-escrow/${userId}`, { method: "POST", headers: { "Authorization": `Bearer ${adminToken}` } });
-      else if (action === 'queue_override') res = await fetch(`${API_BASE}/admin/queue/override`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` }, body: JSON.stringify(data) });
+        res = await fetch(`${API_BASE}/admin/settings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify({ key, value: data[key] })
+        });
+      } else if (action === "review_match") {
+        res = await fetch(`${API_BASE}/admin/queue/review`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify(data)
+        });
+      } else if (action === "release_payout") {
+        res = await fetch(`${API_BASE}/admin/release-payout/${userId}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${adminToken}` }
+        });
+      } else if (action === "refund_escrow") {
+        res = await fetch(`${API_BASE}/admin/refund-escrow/${userId}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${adminToken}` }
+        });
+      } else if (action === 'queue_override') {
+        res = await fetch(`${API_BASE}/admin/queue/override`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify(data)
+        });
+      }
 
       if (res && res.ok) {
         if (activeTab === "users") fetchUsers();
@@ -2136,7 +2159,6 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
       }
     } catch (e) { showAlert("Error connecting to server"); }
   };
-
   return (
     <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
       <View style={{ backgroundColor: "#1E293B" }}>
