@@ -1,34 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlmodel import Session, create_engine, select, func, and_
+from sqlmodel import Session, select, func, and_
 from typing import List
 from .models import User, Booking, SystemSetting, Match, UserUpdate, DashboardMetrics, BookingResponse, UserCreate
-from .auth import get_current_user_id, security
+from .customer_profile import router as customer_profile_router
+from .database import get_session
+from .dependencies import get_current_user, require_role
 from decimal import Decimal
 import os
 
 app = FastAPI(title="Wantok Workforce API")
-
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/wantok")
-engine = create_engine(DATABASE_URL)
-
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-async def get_current_user(auth: HTTPAuthorizationCredentials = Security(security), session: Session = Depends(get_session)):
-    sub = await get_current_user_id(auth)
-    user = session.get(User, sub)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return user
-
-def require_role(role: str):
-    def role_checker(user: User = Depends(get_current_user)):
-        if user.role != role:
-            raise HTTPException(status_code=403, detail=f"Requires {role} role")
-        return user
-    return role_checker
+app.include_router(customer_profile_router)
 
 # --- CUSTOMER MODULE ---
 @app.get("/customer/bookings", response_model=List[BookingResponse])
@@ -68,7 +50,6 @@ def release_escrow(booking_id: int, user: User = Depends(require_role("customer"
 
 @app.get("/customer/categories")
 def get_categories(session: Session = Depends(get_session)):
-    # Simple mock return or query from a categories table
     return ["Plumbing", "Electrical", "Legal", "Medical", "Carpentry"]
 
 # --- PROVIDER MODULE ---
@@ -123,6 +104,8 @@ def admin_create_user(payload: UserCreate, user: User = Depends(require_role("ad
         name=payload.name,
         email=payload.email,
         phone_number=payload.phone_number,
+        whatsapp_number=payload.whatsapp_number,
+        physical_address=payload.physical_address,
         password_hash=get_password_hash(payload.password),
         role=payload.role
     )

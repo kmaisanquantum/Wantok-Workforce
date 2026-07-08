@@ -9,6 +9,8 @@ class UserBase(SQLModel):
     name: str
     email: str = Field(unique=True, index=True)
     phone_number: str
+    whatsapp_number: Optional[str] = None
+    physical_address: Optional[str] = None
     role: str = Field(default="customer") # 'customer', 'provider', 'admin'
     is_available: bool = Field(default=True)
     status: str = Field(default="active") # 'active', 'suspended'
@@ -82,5 +84,17 @@ class UserCreate(BaseModel):
     name: str
     email: str
     phone_number: str
+    whatsapp_number: Optional[str] = None
+    physical_address: Optional[str] = None
     password: str
     role: str = "customer"
+
+class CustomerSavedLocation(SQLModel, table=True):
+    __tablename__ = "customer_saved_locations"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    customer_id: int = Field(foreign_key="users.id", index=True)
+    location_label: str = Field(index=True)
+    address_line: str
+    coordinates: Optional[str] = Field(sa_column=Column(Geometry("POINT", srid=4326)))
+    is_default: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
