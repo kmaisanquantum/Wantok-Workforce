@@ -1924,6 +1924,7 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
 }
 
 
+
 function ProviderProfileForm({ user, showAlert, isDesktop }) {
   const [profile, setProfile] = useState({
     business_name: '', service_category: '', bio: '', hourly_rate: '',
@@ -1976,7 +1977,7 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
     }
   };
 
-  const InputField = ({ label, value, onChange, placeholder, keyboardType = 'default', multiline = false }) => (
+  const InputField = ({ label, value, onChange, placeholder, keyboardType = 'default', multiline = false, note = "" }) => (
     <View style={{ marginBottom: 16, flex: 1 }}>
       <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>{label}</Text>
       <TextInput
@@ -1990,6 +1991,7 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
           minHeight: multiline ? 80 : 45, textAlignVertical: multiline ? 'top' : 'center'
         }}
       />
+      {note ? <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{note}</Text> : null}
     </View>
   );
 
@@ -2004,19 +2006,19 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
 
       <InputField label="Professional Bio" value={profile.bio} onChange={t => setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
 
-      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
         <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t => setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
         <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t => setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
       </View>
 
-      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
         <InputField label="Primary Phone" value={profile.primary_phone} onChange={t => setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
-        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t => setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" />
+        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t => setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" note="Media/Coordinate sharing channel" />
       </View>
 
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 10, marginBottom: 16 }}>Financial / Payout Details</Text>
 
-      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
         <InputField label="Bank Name" value={profile.bank_name} onChange={t => setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
         <InputField label="Account Name" value={profile.bank_account_name} onChange={t => setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
       </View>

@@ -1,43 +1,86 @@
 const UserModel = require('../../auth/models/user_model');
 
 class ProviderController {
-    static async updateProfile(req, res) {
+  static async updateProfile(req, res) {
+    let client;
     try {
       const provider_id = req.user.id;
-      const { primary_skill, skills_specialization, years_experience, hourly_rate, operating_location } = req.body;
+      const {
+        business_name, service_category, bio, hourly_rate,
+        primary_phone, whatsapp_business, operating_suburb,
+        bank_name, bank_account_name, bank_account_number,
+        is_accepting_jobs
+      } = req.body;
 
-      if (!primary_skill) {
-        return res.status(400).json({ success: false, error: 'Primary skill is required' });
-      }
+      client = await UserModel.getPool().connect();
+      await client.query('BEGIN');
 
-      const pool = UserModel.getPool();
-      const parsedYears = parseInt(years_experience) || 0;
       const parsedRate = parseFloat(hourly_rate) || 0;
 
-      // Update basic user info (primary skill, rate, and sync location_name)
-      await pool.query(
+      // Update basic user info
+      await client.query(
         'UPDATE users SET primary_skill = $1, hourly_rate = $2, location_name = $3 WHERE id = $4',
-        [primary_skill, parsedRate, operating_location, provider_id]
+        [service_category, parsedRate, operating_suburb, provider_id]
       );
 
-      // Update provider profile info
-      await pool.query(
-        'INSERT INTO provider_profiles (user_id, skills_specialization, years_experience, operating_location) ' +
-        'VALUES ($1, $2, $3, $4) ' +
-        'ON CONFLICT (user_id) DO UPDATE SET ' +
-        'skills_specialization = EXCLUDED.skills_specialization, ' +
-        'years_experience = EXCLUDED.years_experience, ' +
-        'operating_location = EXCLUDED.operating_location',
-        [provider_id, skills_specialization, parsedYears, operating_location]
+      // Update or Insert detailed provider profile
+      await client.query(
+        `INSERT INTO provider_profiles (
+          user_id, business_name, service_category, bio, hourly_rate,
+          primary_phone, whatsapp_business, operating_suburb,
+          bank_name, bank_account_name, bank_account_number, is_accepting_jobs
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (user_id) DO UPDATE SET
+          business_name = EXCLUDED.business_name,
+          service_category = EXCLUDED.service_category,
+          bio = EXCLUDED.bio,
+          hourly_rate = EXCLUDED.hourly_rate,
+          primary_phone = EXCLUDED.primary_phone,
+          whatsapp_business = EXCLUDED.whatsapp_business,
+          operating_suburb = EXCLUDED.operating_suburb,
+          bank_name = EXCLUDED.bank_name,
+          bank_account_name = EXCLUDED.bank_account_name,
+          bank_account_number = EXCLUDED.bank_account_number,
+          is_accepting_jobs = EXCLUDED.is_accepting_jobs,
+          updated_at = CURRENT_TIMESTAMP`,
+        [
+          provider_id, business_name, service_category, bio, parsedRate,
+          primary_phone, whatsapp_business, operating_suburb,
+          bank_name, bank_account_name, bank_account_number,
+          is_accepting_jobs !== undefined ? is_accepting_jobs : true
+        ]
       );
 
-      return res.status(200).json({ success: true, message: 'Profile updated successfully' });
+      await client.query('COMMIT');
+      return res.status(200).json({ success: true, message: 'Provider storefront profile securely updated.' });
     } catch (error) {
+      if (client) await client.query('ROLLBACK');
       console.error('❌ Update Profile Error:', error);
       return res.status(500).json({ success: false, error: 'Failed to update provider profile' });
+    } finally {
+      if (client) client.release();
     }
   }
 
+  static async getProfile(req, res) {
+    try {
+      const provider_id = req.user.id;
+      const query = 'SELECT * FROM provider_profiles WHERE user_id = $1';
+      const { rows } = await UserModel.getPool().query(query, [provider_id]);
+
+      if (rows.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: { user_id: provider_id, is_accepting_jobs: true }
+        });
+      }
+
+      return res.status(200).json({ success: true, data: rows[0] });
+    } catch (error) {
+      console.error('❌ Get Profile Error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch provider profile' });
+    }
+  }
 
   static async submitVouch(req, res) {
     try {
@@ -93,12 +136,10 @@ class ProviderController {
     try {
       const provider_id = req.user.id;
 
-      // 1. Fetch Profile Stats (Wallet & Withdrawn)
       const profileQuery = 'SELECT wallet_balance, withdrawn_total FROM provider_profiles WHERE user_id = $1';
       const profileResult = await UserModel.getPool().query(profileQuery, [provider_id]);
       const profile = profileResult.rows[0] || { wallet_balance: 0, withdrawn_total: 0 };
 
-      // 2. Fetch Job Stats
       const statsQuery = `
         SELECT
           COALESCE(SUM(price), 0) as "totalEarned",
@@ -109,7 +150,6 @@ class ProviderController {
       const statsResult = await UserModel.getPool().query(statsQuery, [provider_id]);
       const stats = statsResult.rows[0];
 
-      // 3. Fetch Job History (Permanent Record Cards)
       const historyQuery = `
         SELECT b.id, b.service_type, b.price, b.status, b.completed_at, b.feedback_rating, b.feedback_text,
                u.name as customer_name
