@@ -1923,6 +1923,126 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
   );
 }
 
+
+function ProviderProfileForm({ user, showAlert, isDesktop }) {
+  const [profile, setProfile] = useState({
+    business_name: '', service_category: '', bio: '', hourly_rate: '',
+    primary_phone: '', whatsapp_business: '', operating_suburb: '',
+    bank_name: '', bank_account_name: '', bank_account_number: '',
+    is_accepting_jobs: true
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/providers/profile`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setProfile({
+          ...data.data,
+          hourly_rate: String(data.data.hourly_rate || '')
+        });
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/providers/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(profile)
+      });
+      const data = await res.json();
+      if (data.success) {
+        showAlert("Provider storefront profile securely updated.");
+      } else {
+        showAlert(data.error || "Failed to update profile");
+      }
+    } catch (e) {
+      showAlert("Network error saving profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const InputField = ({ label, value, onChange, placeholder, keyboardType = 'default', multiline = false }) => (
+    <View style={{ marginBottom: 16, flex: 1 }}>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        style={{
+          backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0",
+          minHeight: multiline ? 80 : 45, textAlignVertical: multiline ? 'top' : 'center'
+        }}
+      />
+    </View>
+  );
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>Storefront Configuration</Text>
+
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+        <InputField label="Business Name" value={profile.business_name} onChange={t => setProfile({...profile, business_name: t})} placeholder="Trading name" />
+        <InputField label="Service Category" value={profile.service_category} onChange={t => setProfile({...profile, service_category: t})} placeholder="e.g. Electrical, Plumbing" />
+      </View>
+
+      <InputField label="Professional Bio" value={profile.bio} onChange={t => setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
+
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+        <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t => setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
+        <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t => setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
+      </View>
+
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+        <InputField label="Primary Phone" value={profile.primary_phone} onChange={t => setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
+        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t => setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" />
+      </View>
+
+      <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 10, marginBottom: 16 }}>Financial / Payout Details</Text>
+
+      <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
+        <InputField label="Bank Name" value={profile.bank_name} onChange={t => setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
+        <InputField label="Account Name" value={profile.bank_account_name} onChange={t => setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
+      </View>
+      <InputField label="Account Number" value={profile.bank_account_number} onChange={t => setProfile({...profile, bank_account_number: t})} placeholder="EFT transfer number" />
+
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginVertical: 20, padding: 16, backgroundColor: "#F8FAFC", borderRadius: 12 }}>
+        <View>
+          <Text style={{ fontWeight: "700", color: COLORS.text }}>Accepting New Jobs</Text>
+          <Text style={{ fontSize: 12, color: "#64748B" }}>Toggle visibility in search results</Text>
+        </View>
+        <Switch value={profile.is_accepting_jobs} onValueChange={v => setProfile({...profile, is_accepting_jobs: v})} />
+      </View>
+
+      <View style={{ alignItems: isDesktop ? "flex-end" : "stretch", marginBottom: 20 }}>
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", width: isDesktop ? 200 : "100%" }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Profile"}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert, isDesktop }) {
   const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || "");
   const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsapp_number || "");
@@ -2007,6 +2127,10 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>{currentUser?.toUpperCase()}</Text>
              </View>
           </View>
+
+          {currentUser === "provider" && (
+            <ProviderProfileForm user={user} showAlert={showAlert} isDesktop={isDesktop} />
+          )}
 
           {currentUser === "customer" && (
             <View style={{ padding: 20 }}>
