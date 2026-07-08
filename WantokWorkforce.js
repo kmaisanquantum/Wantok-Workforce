@@ -2035,7 +2035,12 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/users?role=${encodeURIComponent(roleFilter)}`, {
+          let roleQuery = "";
+      if (roleFilter === "Service Providers") roleQuery = "provider";
+      else if (roleFilter === "Customers") roleQuery = "customer";
+      else if (roleFilter === "Admins") roleQuery = "admin";
+
+      const res = await fetch(`${API_BASE}/admin/users?role=${roleQuery}`, {
         headers: { "Authorization": `Bearer ${user?.token}` }
       });
       const data = await res.json().catch(() => ({}));
@@ -2297,11 +2302,12 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                   // 1. Strict Exclusions
                   const isNotMockProvider = (u.name || '').toLowerCase().trim() !== 'mock provider';
                   const isNotGeneralTrade = (u.category || u.trade_type || '').toLowerCase().trim() !== 'general trade';
-                  const isNotAdmin = (u.role || '').toLowerCase() !== 'admin' &&
-                                     (u.role || '').toLowerCase() !== 'master admin' &&
-                                     !u.isAdmin;
-                  if (!isNotMockProvider || !isNotGeneralTrade || !isNotAdmin) {
-                    return false; // Permanently drop them before checking search words
+                  const isAdmin = (u.role || '').toLowerCase() === 'admin' ||
+                                  (u.role || '').toLowerCase() === 'master admin' ||
+                                  u.isAdmin;
+                  // Only hide admins if the filter is NOT set to Admins
+                  if (!isNotMockProvider || !isNotGeneralTrade || (roleFilter !== "Admins" && isAdmin)) {
+                    return false;
                   }
                   const q = (searchQuery || "").toLowerCase();
                   return (u?.name || "").toLowerCase().includes(q) || (u?.email || "").toLowerCase().includes(q) || (u.phone_number || "").toLowerCase().includes(q);
