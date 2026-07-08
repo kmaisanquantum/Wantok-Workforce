@@ -18,6 +18,7 @@ const { createAdapter } = require('@socket.io/redis-adapter');
 const jwt = require('jsonwebtoken');
 
 const authRoutes = require('./src/auth/routes/auth_routes');
+const customerRoutes = require('./src/customers/routes/customer_routes');
 const matchRoutes = require('./src/match/routes/match_routes');
 const bookingRoutes = require('./src/match/routes/booking_routes');
 const adminRoutes = require('./src/admin/routes/admin_routes');
@@ -175,6 +176,7 @@ app.use(express.json());
 
 // Domain API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/v1/customers', customerRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
@@ -223,6 +225,14 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
     const pool = UserModel.getPool();
     if (pool) {
       await initializeDatabase(pool);
+      const fs = require("fs");
+      const path = require("path");
+      const patchPath = path.join(__dirname, "db", "patch_customer_ecommerce_profile.sql");
+      if (fs.existsSync(patchPath)) {
+        const patchSql = fs.readFileSync(patchPath, "utf8");
+        await pool.query(patchSql);
+        console.log("✅ E-commerce profile patch applied.");
+      }
       console.log('✅ Backend is ready and database is synced.');
       const worker = new MatchWorker();
       worker.start();
