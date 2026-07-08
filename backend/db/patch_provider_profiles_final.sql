@@ -1,29 +1,31 @@
--- Step 2: Refactor PostgreSQL Database Schemas
+-- Step 2: Final Provider Profiles Schema
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS provider_profiles (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    business_name VARCHAR(255),           -- Commercial or sole-trader trading name
-    service_category VARCHAR(100),        -- Operating domain (e.g., Electrical, Plumbing, Logistics)
-    bio TEXT,                             -- Promotional skills & qualification overview
-    hourly_rate NUMERIC(10, 2),           -- Baseline pricing structure in PGK
-    primary_phone VARCHAR(20),            -- Operational voice line
-    whatsapp_business VARCHAR(20),        -- Media/Coordinate sharing channel
-    operating_suburb VARCHAR(150),        -- Base coverage region (e.g., Waigani, Boroko, Gordons)
-    bank_name VARCHAR(100),               -- Payout target entity (e.g., BSP, Kina Bank, Westpac)
-    bank_account_name VARCHAR(255),       -- Registered name on bank statement
-    bank_account_number VARCHAR(50),     -- EFT bank transfer number
-    is_verified BOOLEAN DEFAULT false,    -- Internal admin KYC validation flag
-    is_accepting_jobs BOOLEAN DEFAULT true,-- Live availability toggle switch
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    business_name VARCHAR(255),
+    service_category VARCHAR(100),
+    bio TEXT,
+    hourly_rate NUMERIC(10, 2),
+    primary_phone VARCHAR(20),
+    whatsapp_business VARCHAR(20),
+    operating_suburb VARCHAR(150),
+    bank_name VARCHAR(100),
+    bank_account_name VARCHAR(255),
+    bank_account_number VARCHAR(50),
+    is_verified BOOLEAN DEFAULT false,
+    is_accepting_jobs BOOLEAN DEFAULT true,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_provider_user_link ON provider_profiles(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_provider_user_link_final ON provider_profiles(user_id);
 
--- Migration: Add missing columns to existing provider_profiles if needed
+-- Migration logic to ensure all columns exist
 DO $$
 BEGIN
+    -- Columns from the spec
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='provider_profiles' AND column_name='business_name') THEN
         ALTER TABLE provider_profiles ADD COLUMN business_name VARCHAR(255);
     END IF;
@@ -50,6 +52,12 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='provider_profiles' AND column_name='is_accepting_jobs') THEN
         ALTER TABLE provider_profiles ADD COLUMN is_accepting_jobs BOOLEAN DEFAULT true;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='provider_profiles' AND column_name='bio') THEN
+        ALTER TABLE provider_profiles ADD COLUMN bio TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='provider_profiles' AND column_name='hourly_rate') THEN
+        ALTER TABLE provider_profiles ADD COLUMN hourly_rate NUMERIC(10, 2);
     END IF;
 END$$;
 

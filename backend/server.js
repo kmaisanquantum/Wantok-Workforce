@@ -233,11 +233,11 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
         await pool.query(patchSql);
         console.log("✅ E-commerce profile patch applied.");
       }
-      const patchPath2 = path.join(__dirname, "db", "patch_provider_profiles_v2.sql");
+      const patchPath2 = path.join(__dirname, "db", "patch_provider_profiles_final.sql");
       if (fs.existsSync(patchPath2)) {
         const patchSql2 = fs.readFileSync(patchPath2, "utf8");
         await pool.query(patchSql2);
-        console.log("✅ Provider profile extension patch applied.");
+        console.log("✅ Provider profile final schema applied.");
       }
       console.log('✅ Backend is ready and database is synced.');
       const worker = new MatchWorker();
