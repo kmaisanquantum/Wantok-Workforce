@@ -11,7 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
-  RefreshControl, Modal, Linking,
+  RefreshControl, Modal, Linking, Switch,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import categories from "./categories.json";
@@ -1924,36 +1924,237 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
 }
 
 function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || "");
+  const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsapp_number || "");
+  const [physicalAddress, setPhysicalAddress] = useState(user?.physical_address || "");
+  const [savedLocations, setSavedLocations] = useState([]);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [newLocation, setNewLocation] = useState({ label: '', address: '', longitude: 0, latitude: 0, is_default: false });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (currentUser === "customer") {
+      fetchSavedLocations();
+    }
+  }, [currentUser]);
+
+  const fetchSavedLocations = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/customers/locations`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json();
+      if (data.success) setSavedLocations(data.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/v1/customers/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          whatsapp_number: whatsappNumber,
+          physical_address: physicalAddress
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showAlert("Profile updated successfully!");
+        if (onUpdateUser) onUpdateUser({ ...user, ...data.data });
+      } else {
+        showAlert(data.error || "Failed to update profile");
+      }
+    } catch (e) {
+      showAlert("Network error saving profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddLocation = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/customers/locations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(newLocation)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowLocationModal(false);
+        setNewLocation({ label: '', address: '', longitude: 0, latitude: 0, is_default: false });
+        fetchSavedLocations();
+        showAlert("Location added!");
+      }
+    } catch (e) { showAlert("Error adding location"); }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-
-      <ScrollView contentContainerStyle={{ alignItems: "center" }}>
+      <ScrollView contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}>
         <View style={{ maxWidth: MAX_WIDTH, width: "100%", paddingHorizontal: CONTENT_PADDING }}>
-        <View style={{ padding: 24, alignItems: "center", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-             <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800" }}>{user?.name?.charAt(0) || "U"}</Text>
-           </View>
-           <Text style={{ fontSize: 20, fontWeight: "800", color: COLORS.text }}>{user?.name}</Text>
-           <Text style={{ color: COLORS.textMuted }}>{user?.email}</Text>
-           <View style={{ backgroundColor: COLORS.primary + "15", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 8 }}>
-             <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>{currentUser?.toUpperCase()}</Text>
-           </View>
-        </View>
+          <View style={{ padding: 24, alignItems: "center", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+               <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800" }}>{user?.name?.charAt(0) || "U"}</Text>
+             </View>
+             <Text style={{ fontSize: 20, fontWeight: "800", color: COLORS.text }}>{user?.name}</Text>
+             <Text style={{ color: COLORS.textMuted }}>{user?.email}</Text>
+             <View style={{ backgroundColor: COLORS.primary + "15", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 8 }}>
+               <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>{currentUser?.toUpperCase()}</Text>
+             </View>
+          </View>
 
-        <View style={{ padding: 20 }}>
-          <TouchableOpacity onPress={onLogout} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12, marginBottom: 12 }}>
-            <Text style={{ fontSize: 18, marginRight: 12 }}>🚪</Text>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.danger }}>Logout</Text>
-          </TouchableOpacity>
-          {user?.roles?.includes("admin") && (
-            <TouchableOpacity onPress={() => onNavigate("admin")} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12 }}>
-              <Text style={{ fontSize: 18, marginRight: 12 }}>🛠️</Text>
-              <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.text }}>Admin Dashboard</Text>
-            </TouchableOpacity>
+          {currentUser === "customer" && (
+            <View style={{ padding: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>Contact Information</Text>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>Phone Number</Text>
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="Enter phone number"
+                  style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
+                />
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>WhatsApp Number</Text>
+                <TextInput
+                  value={whatsappNumber}
+                  onChangeText={setWhatsappNumber}
+                  placeholder="Enter WhatsApp number"
+                  style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
+                />
+                <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
+              </View>
+
+              <View style={{ marginBottom: 24 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>Primary Physical Address</Text>
+                <TextInput
+                  value={physicalAddress}
+                  onChangeText={setPhysicalAddress}
+                  placeholder="Enter your full address"
+                  multiline
+                  numberOfLines={3}
+                  style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0", minHeight: 80, textAlignVertical: 'top' }}
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text }}>Saved Addresses</Text>
+                <TouchableOpacity onPress={() => setShowLocationModal(true)}>
+                  <Text style={{ color: COLORS.primary, fontWeight: "700" }}>+ Add New</Text>
+                </TouchableOpacity>
+              </View>
+
+              {savedLocations.length === 0 ? (
+                <View style={{ padding: 20, backgroundColor: "#fff", borderRadius: 12, alignItems: "center", marginBottom: 24 }}>
+                  <Text style={{ color: "#94A3B8" }}>No saved addresses yet.</Text>
+                </View>
+              ) : (
+                <View style={{ marginBottom: 24 }}>
+                  {savedLocations.map(loc => (
+                    <View key={loc.id} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: loc.is_default ? COLORS.primary : "#E2E8F0" }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                        <Text style={{ fontWeight: "700", color: COLORS.text }}>{loc.location_label} {loc.is_default && "✅"}</Text>
+                        <TouchableOpacity onPress={() => { /* Delete logic */ }}>
+                          <Text style={{ color: COLORS.danger, fontSize: 12 }}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={{ color: "#64748B", fontSize: 13, marginTop: 4 }}>{loc.address_line}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={handleSaveProfile}
+                disabled={saving}
+                style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", marginBottom: 20 }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Changes"}</Text>
+              </TouchableOpacity>
+            </View>
           )}
+
+          <View style={{ padding: 20, paddingTop: 0 }}>
+            <TouchableOpacity onPress={onLogout} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12, marginBottom: 12 }}>
+              <Text style={{ fontSize: 18, marginRight: 12 }}>🚪</Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.danger }}>Logout</Text>
+            </TouchableOpacity>
+            {user?.roles?.includes("admin") && (
+              <TouchableOpacity onPress={() => onNavigate("admin")} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12 }}>
+                <Text style={{ fontSize: 18, marginRight: 12 }}>🛠️</Text>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.text }}>Admin Dashboard</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
+
+      {/* Inline Location Modal */}
+      <Modal visible={showLocationModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 24 }}>
+            <Text style={{ fontSize: 20, fontWeight: "800", marginBottom: 20 }}>Add New Location</Text>
+
+            <TextInput
+              placeholder="Location Tag (e.g. Home, Office)"
+              value={newLocation.label}
+              onChangeText={t => setNewLocation({...newLocation, label: t})}
+              style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
+            />
+            <TextInput
+              placeholder="Full Address Line"
+              value={newLocation.address}
+              onChangeText={t => setNewLocation({...newLocation, address: t})}
+              style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+              <TextInput
+                placeholder="Latitude"
+                value={String(newLocation.latitude)}
+                onChangeText={t => setNewLocation({...newLocation, latitude: parseFloat(t) || 0})}
+                keyboardType="numeric"
+                style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
+              />
+              <TextInput
+                placeholder="Longitude"
+                value={String(newLocation.longitude)}
+                onChangeText={t => setNewLocation({...newLocation, longitude: parseFloat(t) || 0})}
+                keyboardType="numeric"
+                style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <Text>Set as default delivery address</Text>
+              <Switch
+                value={newLocation.is_default}
+                onValueChange={v => setNewLocation({...newLocation, is_default: v})}
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity onPress={() => setShowLocationModal(false)} style={{ flex: 1, padding: 16, backgroundColor: "#F1F5F9", borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ fontWeight: "700" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleAddLocation} style={{ flex: 1, padding: 16, backgroundColor: COLORS.primary, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Save Location</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
