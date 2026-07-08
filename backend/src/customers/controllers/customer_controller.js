@@ -2,11 +2,15 @@ const UserModel = require('../../auth/models/user_model');
 
 class CustomerController {
     static async updateFullProfile(req, res) {
+        let client;
         try {
             const userId = req.user.id;
-            const { name, phone_number, whatsapp_number, physical_address } = req.body;
+            const { name, phone_number, whatsapp_number, physical_address, saved_locations } = req.body;
 
-            const query = `
+            client = await UserModel.getPool().connect();
+            await client.query('BEGIN');
+
+            const updateQuery = `
                 UPDATE users
                 SET name = COALESCE(, name),
                     phone_number = COALESCE(, phone_number),
@@ -17,16 +21,42 @@ class CustomerController {
                 RETURNING id, name, email, phone_number, whatsapp_number, physical_address
             `;
 
-            const { rows } = await UserModel.getPool().query(query, [name, phone_number, whatsapp_number, physical_address, userId]);
+            const { rows } = await client.query(updateQuery, [name, phone_number, whatsapp_number, physical_address, userId]);
+            const updatedUser = rows[0];
 
+            if (saved_locations && Array.isArray(saved_locations)) {
+                // If any new location is default, unset others
+                if (saved_locations.some(loc => loc.is_default)) {
+                    await client.query('UPDATE customer_saved_locations SET is_default = false WHERE customer_id = ', [userId]);
+                }
+
+                for (const loc of saved_locations) {
+                    const lat = loc.latitude || loc.lat;
+                    const lon = loc.longitude || loc.lon;
+                    const label = loc.label || loc.location_label;
+                    const address = loc.address || loc.address_line;
+
+                    if (label && address) {
+                        await client.query(`
+                            INSERT INTO customer_saved_locations (customer_id, location_label, address_line, coordinates, is_default)
+                            VALUES (, , , ST_SetSRID(ST_MakePoint(, ), 4326), )
+                        `, [userId, label, address, lon, lat, loc.is_default || false]);
+                    }
+                }
+            }
+
+            await client.query('COMMIT');
             return res.status(200).json({
                 success: true,
-                message: 'Customer profile updated successfully',
-                data: rows[0]
+                message: 'E-commerce contact profile securely updated.',
+                data: updatedUser
             });
         } catch (error) {
+            if (client) await client.query('ROLLBACK');
             console.error('Update Customer Profile Error:', error);
             return res.status(500).json({ error: 'Failed to update profile' });
+        } finally {
+            if (client) client.release();
         }
     }
 
