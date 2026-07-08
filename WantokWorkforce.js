@@ -119,8 +119,8 @@ function ProviderVouchingForm({ user, onVouchSubmitted, showAlert }) {
 
   return (
     <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, elevation: 4, marginTop: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 8 }}>🤝 Community Vouching</Text>
-      <Text style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 16 }}>Verify your skills via a community leader (Church, Village, or School).</Text>
+      <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 8 }}>🤝 Get Verified (Optional Extra)</Text>
+      <Text style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 16 }}>Optional: Verify your skills via a community leader (Church, Village, or School) for a higher trust score.</Text>
       <TextInput placeholder="Gatekeeper Name (e.g. Pastor John)" value={gatekeeper.name} onChangeText={(v) => setGatekeeper({...gatekeeper, name: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
       <TextInput placeholder="Gatekeeper Role (e.g. Village Councillor)" value={gatekeeper.role} onChangeText={(v) => setGatekeeper({...gatekeeper, role: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
       <TextInput placeholder="Contact Phone / Email" value={gatekeeper.contact} onChangeText={(v) => setGatekeeper({...gatekeeper, contact: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 16 }} />
@@ -175,7 +175,7 @@ function ProviderFinancialDashboard({ user, showAlert }) {
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 8 }}>📜 Permanent Employment Record</Text>
       {ledger.history?.length === 0 ? (
         <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border }}>
-          <Text style={{ color: COLORS.textMuted }}>No completed job cards found.</Text>
+          <Text style={{ color: COLORS.textMuted, textAlign: 'center' }}>Your completed jobs will automatically build your verified work history record here.</Text>
         </View>
       ) : (
         <View style={{ gap: 12 }}>
@@ -468,6 +468,16 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
               </View>
 
               <View style={{ flex: isDesktop ? 1 : 1, gap: 16 }}>
+                <View style={{ backgroundColor: "#1E293B", borderRadius: 20, padding: 20 }}>
+                  <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 12 }}>Quick Actions</Text>
+                  <TouchableOpacity onPress={() => setIsUpdateModalVisible(true)} style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10, marginBottom: 10 }}>
+                    <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Update Storefront Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10 }}>
+                    <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>View Marketplace</Text>
+                  </TouchableOpacity>
+                </View>
+
                 {!vStatus?.verified && vStatus?.vouch_status !== "pending" && (
                   <ProviderVouchingForm user={user} showAlert={showAlert} onVouchSubmitted={fetchVerification} />
                 )}
@@ -477,16 +487,6 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                     <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4, textAlign: "center" }}>Your community gatekeeper request is being reviewed by the Wantok team.</Text>
                   </View>
                 )}
-
-                <View style={{ backgroundColor: "#1E293B", borderRadius: 20, padding: 20 }}>
-                  <Text style={{ color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 12 }}>Quick Actions</Text>
-                  <TouchableOpacity onPress={() => setIsUpdateModalVisible(true)} style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10, marginBottom: 10 }}>
-                    <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Update Trade Skills</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: 12, borderRadius: 10 }}>
-                    <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>View Marketplace</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
             </View>
 
@@ -496,7 +496,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', borderRadius: 24, width: '100%', maxWidth: 500, padding: 24, maxHeight: '90%' }}>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 4 }}>Update Trade Profile</Text>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 4 }}>Update Storefront Profile</Text>
                 <Text style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 20 }}>Refine your skills for better job matching</Text>
 
                 <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>PRIMARY TRADE CATEGORY</Text>
@@ -569,7 +569,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                     disabled={isUpdating}
                     style={{ flex: 2, padding: 16, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center' }}
                   >
-                    <Text style={{ fontWeight: '700', color: '#fff' }}>{isUpdating ? 'Saving...' : 'Update Skills'}</Text>
+                    <Text style={{ fontWeight: '700', color: '#fff' }}>{isUpdating ? 'Saving...' : 'Save Configuration'}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
