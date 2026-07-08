@@ -1996,7 +1996,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <ScrollView contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}>
-        <View style={{ maxWidth: MAX_WIDTH, width: "100%", paddingHorizontal: CONTENT_PADDING }}>
+        <View style={{ maxWidth: 800, width: "100%", paddingHorizontal: CONTENT_PADDING }}>
           <View style={{ padding: 24, alignItems: "center", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
              <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
                <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800" }}>{user?.name?.charAt(0) || "U"}</Text>
@@ -2012,25 +2012,27 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
             <View style={{ padding: 20 }}>
               <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>Contact Information</Text>
 
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>Phone Number</Text>
-                <TextInput
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  placeholder="Enter phone number"
-                  style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
-                />
-              </View>
+              <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>Phone Number</Text>
+                  <TextInput
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    placeholder="Enter phone number"
+                    style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
+                  />
+                </View>
 
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>WhatsApp Number</Text>
-                <TextInput
-                  value={whatsappNumber}
-                  onChangeText={setWhatsappNumber}
-                  placeholder="Enter WhatsApp number"
-                  style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
-                />
-                <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748B", marginBottom: 8 }}>WhatsApp Number</Text>
+                  <TextInput
+                    value={whatsappNumber}
+                    onChangeText={setWhatsappNumber}
+                    placeholder="Enter WhatsApp number"
+                    style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
+                  />
+                  <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
+                </View>
               </View>
 
               <View style={{ marginBottom: 24 }}>
@@ -2072,13 +2074,15 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                 </View>
               )}
 
-              <TouchableOpacity
-                onPress={handleSaveProfile}
-                disabled={saving}
-                style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", marginBottom: 20 }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Changes"}</Text>
-              </TouchableOpacity>
+              <View style={{ alignItems: isDesktop ? "flex-end" : "stretch", marginBottom: 20 }}>
+                <TouchableOpacity
+                  onPress={handleSaveProfile}
+                  disabled={saving}
+                  style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", width: isDesktop ? 200 : "100%" }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Changes"}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
