@@ -18,7 +18,7 @@ import categories from "./categories.json";
 
 const { width, height: screenHeight } = Dimensions.get("window");
 const isDesktop = width > 1024;
-const isTablet = width > 768;
+const isTablet = width> 768;
 const MAX_WIDTH = 1280;
 const CONTENT_PADDING = isDesktop ? 40 : 16;
 const API_BASE = (typeof process !== "undefined" && process.env.EXPO_PUBLIC_API_URL) || ((typeof window !== "undefined" && window.location.hostname === "localhost") ? "http://localhost:3000/api" : "/api");
@@ -79,7 +79,7 @@ const TrustBadge = () => (
       paddingHorizontal: 8,
       paddingVertical: 2,
     }}
-  >
+>
     <Text style={{ color: "#fff", fontSize: 10 }}>✓</Text>
     <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>Verified</Text>
   </LinearGradient>
@@ -121,9 +121,9 @@ function ProviderVouchingForm({ user, onVouchSubmitted, showAlert }) {
     <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, elevation: 4, marginTop: 16 }}>
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 8 }}>🤝 Get Verified (Optional Extra)</Text>
       <Text style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 16 }}>Optional: Verify your skills via a community leader (Church, Village, or School) for a higher trust score.</Text>
-      <TextInput placeholder="Gatekeeper Name (e.g. Pastor John)" value={gatekeeper.name} onChangeText={(v) => setGatekeeper({...gatekeeper, name: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
-      <TextInput placeholder="Gatekeeper Role (e.g. Village Councillor)" value={gatekeeper.role} onChangeText={(v) => setGatekeeper({...gatekeeper, role: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
-      <TextInput placeholder="Contact Phone / Email" value={gatekeeper.contact} onChangeText={(v) => setGatekeeper({...gatekeeper, contact: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 16 }} />
+      <TextInput placeholder="Gatekeeper Name (e.g. Pastor John)" /> value={gatekeeper.name} onChangeText={(v) => setGatekeeper({...gatekeeper, name: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
+      <TextInput placeholder="Gatekeeper Role (e.g. Village Councillor)" /> value={gatekeeper.role} onChangeText={(v) => setGatekeeper({...gatekeeper, role: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 10 }} />
+      <TextInput placeholder="Contact Phone / Email" /> value={gatekeeper.contact} onChangeText={(v) => setGatekeeper({...gatekeeper, contact: v})} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 16 }} />
       <TouchableOpacity onPress={handleSubmit} disabled={isSubmitting} style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: "center" }}>
         <Text style={{ color: "#fff", fontWeight: "700" }}>{isSubmitting ? "SENDING..." : "SUBMIT FOR VALIDATION"}</Text>
       </TouchableOpacity>
@@ -212,9 +212,9 @@ function ProviderFinancialDashboard({ user, showAlert }) {
 function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) {
   const getDynamicGreeting = () => {
     const currentHour = new Date().getHours();
-    if (currentHour >= 5 && currentHour < 12) return "Good morning";
-    if (currentHour >= 12 && currentHour < 17) return "Good afternoon";
-    if (currentHour >= 17 && currentHour < 21) return "Good evening";
+    if (currentHour>= 5 && currentHour < 12) return "Good morning";
+    if (currentHour>= 12 && currentHour < 17) return "Good afternoon";
+    if (currentHour>= 17 && currentHour < 21) return "Good evening";
     return "Good night";
   };
   const fullCustomerName = user?.name || "";
@@ -511,7 +511,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                           backgroundColor: profileForm.primary_skill === cat.label ? COLORS.primary : '#fff',
                           borderWidth: 1, borderColor: COLORS.border
                         }}
-                      >
+>
                         <Text style={{ fontSize: 12, fontWeight: '600', color: profileForm.primary_skill === cat.label ? '#fff' : COLORS.text }}>{cat.label}</Text>
                       </TouchableOpacity>
                     ))}
@@ -524,7 +524,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                   value={profileForm.skills_specialization}
                   onChangeText={(t) => setProfileForm({...profileForm, skills_specialization: t})}
                   style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 14 }}
-                />
+ />
 
                 <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
                   <View style={{ flex: 1 }}>
@@ -535,7 +535,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                       value={profileForm.years_experience}
                       onChangeText={(t) => setProfileForm({...profileForm, years_experience: t})}
                       style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-                    />
+ />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 6 }}>HOURLY RATE (K)</Text>
@@ -545,7 +545,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                       value={profileForm.hourly_rate}
                       onChangeText={(t) => setProfileForm({...profileForm, hourly_rate: t})}
                       style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, fontSize: 14 }}
-                    />
+ />
                   </View>
                 </View>
 
@@ -555,20 +555,20 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                   value={profileForm.operating_location}
                   onChangeText={(t) => setProfileForm({...profileForm, operating_location: t})}
                   style={{ backgroundColor: '#F3F4F6', borderRadius: 12, padding: 12, marginBottom: 24, fontSize: 14 }}
-                />
+ />
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity
                     onPress={() => setIsUpdateModalVisible(false)}
                     style={{ flex: 1, padding: 16, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center' }}
-                  >
+>
                     <Text style={{ fontWeight: '700', color: COLORS.text }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleUpdateProfile}
                     disabled={isUpdating}
                     style={{ flex: 2, padding: 16, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center' }}
-                  >
+>
                     <Text style={{ fontWeight: '700', color: '#fff' }}>{isUpdating ? 'Saving...' : 'Save Configuration'}</Text>
                   </TouchableOpacity>
                 </View>
@@ -584,7 +584,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} style={{ paddingTop: 20, paddingBottom: 35 }}>
-          <ResponsiveContainer>
+            <ResponsiveContainer>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <View>
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{`${getDynamicGreeting()}${customerFirstName ? `, ${customerFirstName}` : "" } 👋`}</Text>
@@ -602,13 +602,13 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
           </ResponsiveContainer>
         </LinearGradient>
 
-        <ResponsiveContainer>
+          <ResponsiveContainer>
           <View style={{ paddingVertical: 20 }}>
             {isSearching ? (
               <View style={{ padding: 40, alignItems: 'center' }}>
                 <Text style={{ color: COLORS.textMuted }}>Searching for nearby providers...</Text>
               </View>
-            ) : (nearbyWorkers || [])?.length > 0 ? (
+            ) : (nearbyWorkers || [])?.length> 0 ? (
               <View style={{ gap: 12 }}>
                 <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 }}>Search Results</Text>
                 {nearbyWorkers?.map((worker) => (
@@ -649,7 +649,7 @@ function ProviderNavigationShell({ renderScreen, navigate, activeNav, onboarding
             borderTopColor: COLORS.border,
             paddingBottom: Platform.OS === "ios" ? 20 : 4,
           }}
-        >
+>
           {[
             { key: "home", label: "Dashboard", icon: "📊" },
             { key: "booking", label: "Jobs", icon: "🔧" },
@@ -668,7 +668,7 @@ function ProviderNavigationShell({ renderScreen, navigate, activeNav, onboarding
                   gap: 3,
                   paddingVertical: 4,
                 }}
-              >
+>
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: isActive ? "#F0FDF4" : "transparent", alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 20 }}>{item?.icon}</Text>
                 </View>
@@ -697,7 +697,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
             borderTopColor: COLORS.border,
             paddingBottom: Platform.OS === "ios" ? 20 : 4,
           }}
-        >
+>
           {NAV_ITEMS?.map((item) => {
             const isActive = activeNav === item?.key;
             return (
@@ -711,7 +711,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
                   gap: 3,
                   paddingVertical: 4,
                 }}
-              >
+>
                 <View
                   style={{
                     width: 38,
@@ -721,7 +721,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                >
+>
                   <Text style={{ fontSize: 20 }}>{item?.icon}</Text>
                 </View>
                 <Text
@@ -730,7 +730,7 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
                     fontWeight: isActive ? "800" : "500",
                     color: isActive ? COLORS.primary : COLORS.textMuted,
                   }}
-                >
+>
                   {item?.label}
                 </Text>
               </TouchableOpacity>
@@ -761,7 +761,7 @@ function TrustScreen({ onNavigate, showAlert }) {
             paddingHorizontal: 16,
             paddingBottom: 24,
           }}
-        >
+>
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "800" }}>
             Trust & Verification
           </Text>
@@ -793,11 +793,11 @@ function TrustScreen({ onNavigate, showAlert }) {
                   shadowOpacity: 0.06,
                   shadowRadius: 8,
                 }}
-              >
+>
                 <Text style={{ fontSize: 24, marginBottom: 6 }}>{stat.icon}</Text>
                 <Text
                   style={{ fontWeight: "800", fontSize: 22, color: stat.color }}
-                >
+>
                   {stat.value}
                 </Text>
                 <Text style={{ marginTop: 2, fontSize: 12, color: COLORS.textMuted }}>
@@ -809,7 +809,7 @@ function TrustScreen({ onNavigate, showAlert }) {
 
           <Text
             style={{ marginTop: 8, marginBottom: 4, fontSize: 15, fontWeight: "700", color: COLORS.text }}
-          >
+>
             Worker Trust Scores
           </Text>
 
@@ -829,7 +829,7 @@ function TrustScreen({ onNavigate, showAlert }) {
                 alignItems: "center",
                 gap: 12,
               }}
-            >
+>
               <LinearGradient
                 colors={
                   w.type === "blue" ? ["#60A5FA", "#2563EB"] : ["#A78BFA", "#7C3AED"]
@@ -841,7 +841,7 @@ function TrustScreen({ onNavigate, showAlert }) {
                   alignItems: "center",
                   justifyContent: "center",
                 }}
-              >
+>
                 <Text style={{ color: "#fff", fontWeight: "800", fontSize: 14 }}>
                   {w.avatar}
                 </Text>
@@ -855,9 +855,9 @@ function TrustScreen({ onNavigate, showAlert }) {
                     style={{
                       fontWeight: "700",
                       fontSize: 13,
-                      color: w.trustScore > 85 ? "#10B981" : "#F59E0B",
+                      color: w.trustScore> 85 ? "#10B981" : "#F59E0B",
                     }}
-                  >
+>
                     {w.trustScore}%
                   </Text>
                 </View>
@@ -870,9 +870,9 @@ function TrustScreen({ onNavigate, showAlert }) {
                       width: `${w.trustScore}%`,
                       height: "100%",
                       borderRadius: 3,
-                      backgroundColor: w.trustScore > 85 ? "#10B981" : "#F59E0B",
+                      backgroundColor: w.trustScore> 85 ? "#10B981" : "#F59E0B",
                     }}
-                  />
+ />
                 </View>
               </View>
               {w.verified && <Text style={{ fontSize: 18 }}>✅</Text>}
@@ -880,9 +880,11 @@ function TrustScreen({ onNavigate, showAlert }) {
           ))}
           </View>
         </View>
-      </ScrollView>
+
     </View>
-  );
+
+
+  </ScrollView></View>);
 }
 
 function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
@@ -997,6 +999,7 @@ function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
           })}
         </View>
         </View>
+
       </ScrollView>
     </View>
   );
@@ -1029,7 +1032,7 @@ function RoleSelectionScreen({ onSelectRole, showAlert }) {
             shadowOpacity: 0.1,
             shadowRadius: 10,
           }}
-        >
+>
           <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Text style={{ fontSize: 36 }}>🤝</Text>
           </View>
@@ -1057,7 +1060,7 @@ function RoleSelectionScreen({ onSelectRole, showAlert }) {
             shadowOpacity: 0.1,
             shadowRadius: 10,
           }}
-        >
+>
           <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Text style={{ fontSize: 36 }}>🔧</Text>
           </View>
@@ -1132,7 +1135,7 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
         onChangeText={onChange}
         keyboardType={keyboardType}
         multiline={multiline}
-      />
+ />
     </View>
   );
 
@@ -1145,7 +1148,7 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
         Configure your basic storefront details to start accepting jobs immediately.
       </Text>
 
-      <InputField label="Business Name" value={formData.business_name} onChange={v => setFormData({...formData, business_name: v})} placeholder="Trading name (e.g. John's Electric)" />
+      <InputField label="Business Name" value={formData.business_name} onChange={v = /> setFormData({...formData, business_name: v})} placeholder="Trading name (e.g. John's Electric)" />
 
       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.textLight, marginBottom: 6 }}>Service Category</Text>
       <View style={{ backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border }}>
@@ -1159,21 +1162,21 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
                 backgroundColor: formData.service_category === cat.label ? COLORS.primary : '#F3F4F6',
                 borderWidth: 1, borderColor: COLORS.border
               }}
-            >
+>
               <Text style={{ fontSize: 12, fontWeight: '600', color: formData.service_category === cat.label ? '#fff' : COLORS.text }}>{cat.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      <InputField label="Professional Bio" value={formData.bio} onChange={v => setFormData({...formData, bio: v})} placeholder="Briefly describe your skills..." multiline />
+      <InputField label="Professional Bio" value={formData.bio} onChange={v = /> setFormData({...formData, bio: v})} placeholder="Briefly describe your skills..." multiline />
 
       <View style={{ flexDirection: 'row', gap: 16 }}>
         <View style={{ flex: 1 }}>
-          <InputField label="Hourly Rate (PGK)" value={formData.hourly_rate} onChange={v => setFormData({...formData, hourly_rate: v})} placeholder="50.00" keyboardType="numeric" />
+          <InputField label="Hourly Rate (PGK)" value={formData.hourly_rate} onChange={v = /> setFormData({...formData, hourly_rate: v})} placeholder="50.00" keyboardType="numeric" />
         </View>
         <View style={{ flex: 1 }}>
-          <InputField label="Operating Suburb" value={formData.operating_suburb} onChange={v => setFormData({...formData, operating_suburb: v})} placeholder="e.g. Waigani" />
+          <InputField label="Operating Suburb" value={formData.operating_suburb} onChange={v = /> setFormData({...formData, operating_suburb: v})} placeholder="e.g. Waigani" />
         </View>
       </View>
 
@@ -1193,7 +1196,7 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
           shadowRadius: 8,
           elevation: 5,
         }}
-      >
+>
         <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
           {loading ? "SAVING..." : "ACTIVATE MY STOREFRONT"}
         </Text>
@@ -1202,7 +1205,7 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
   );
 }
 
-function ProviderProfileForm({ user, showAlert, isDesktop }) {
+function ProviderProfileForm({ user, showAlert }) {
   const [profile, setProfile] = useState({
     business_name: '', service_category: '', bio: '', hourly_rate: '',
     primary_phone: '', whatsapp_business: '', operating_suburb: '',
@@ -1267,7 +1270,7 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
           backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0",
           minHeight: multiline ? 80 : 45, textAlignVertical: multiline ? 'top' : 'center'
         }}
-      />
+ />
       {note ? <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>{note}</Text> : null}
     </View>
   );
@@ -1277,36 +1280,36 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>Storefront Configuration</Text>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
-        <InputField label="Business Name" value={profile.business_name} onChange={t => setProfile({...profile, business_name: t})} placeholder="Trading name" />
-        <InputField label="Service Category" value={profile.service_category} onChange={t => setProfile({...profile, service_category: t})} placeholder="e.g. Electrical, Plumbing" />
+        <InputField label="Business Name" value={profile.business_name} onChange={t = /> setProfile({...profile, business_name: t})} placeholder="Trading name" />
+        <InputField label="Service Category" value={profile.service_category} onChange={t = /> setProfile({...profile, service_category: t})} placeholder="e.g. Electrical, Plumbing" />
       </View>
 
-      <InputField label="Professional Bio" value={profile.bio} onChange={t => setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
+      <InputField label="Professional Bio" value={profile.bio} onChange={t = /> setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t => setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
-        <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t => setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
+        <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t = /> setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
+        <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t = /> setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
       </View>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Primary Phone" value={profile.primary_phone} onChange={t => setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
-        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t => setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" note="Media/Coordinate sharing channel" />
+        <InputField label="Primary Phone" value={profile.primary_phone} onChange={t = /> setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
+        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t = /> setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" note="Media/Coordinate sharing channel" />
       </View>
 
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 10, marginBottom: 16 }}>Financial / Payout Details</Text>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Bank Name" value={profile.bank_name} onChange={t => setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
-        <InputField label="Account Name" value={profile.bank_account_name} onChange={t => setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
+        <InputField label="Bank Name" value={profile.bank_name} onChange={t = /> setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
+        <InputField label="Account Name" value={profile.bank_account_name} onChange={t = /> setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
       </View>
-      <InputField label="Account Number" value={profile.bank_account_number} onChange={t => setProfile({...profile, bank_account_number: t})} placeholder="EFT transfer number" />
+      <InputField label="Account Number" value={profile.bank_account_number} onChange={t = /> setProfile({...profile, bank_account_number: t})} placeholder="EFT transfer number" />
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginVertical: 20, padding: 16, backgroundColor: "#F8FAFC", borderRadius: 12 }}>
         <View>
           <Text style={{ fontWeight: "700", color: COLORS.text }}>Accepting New Jobs</Text>
           <Text style={{ fontSize: 12, color: "#64748B" }}>Toggle visibility in search results</Text>
         </View>
-        <Switch value={profile.is_accepting_jobs} onValueChange={v => setProfile({...profile, is_accepting_jobs: v})} />
+        <Switch value={profile.is_accepting_jobs} onValueChange={v = /> setProfile({...profile, is_accepting_jobs: v})} />
       </View>
 
       <View style={{ alignItems: isDesktop ? "flex-end" : "stretch", marginBottom: 20 }}>
@@ -1314,7 +1317,7 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
           onPress={handleSave}
           disabled={saving}
           style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", width: isDesktop ? 200 : "100%" }}
-        >
+>
           <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Profile"}</Text>
         </TouchableOpacity>
       </View>
@@ -1322,7 +1325,7 @@ function ProviderProfileForm({ user, showAlert, isDesktop }) {
   );
 }
 
-function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert, isDesktop }) {
+function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
   const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || "");
   const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsapp_number || "");
   const [physicalAddress, setPhysicalAddress] = useState(user?.physical_address || "");
@@ -1408,7 +1411,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
           </View>
 
           {currentUser === "provider" && (
-            <ProviderProfileForm user={user} showAlert={showAlert} isDesktop={isDesktop} />
+            <ProviderProfileForm user={user} showAlert={showAlert} />
           )}
 
           {currentUser === "customer" && (
@@ -1423,7 +1426,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                     onChangeText={setPhoneNumber}
                     placeholder="Enter phone number"
                     style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
-                  />
+ />
                 </View>
 
                 <View style={{ flex: 1 }}>
@@ -1433,7 +1436,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                     onChangeText={setWhatsappNumber}
                     placeholder="Enter WhatsApp number"
                     style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
-                  />
+ />
                   <Text style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
                 </View>
               </View>
@@ -1447,7 +1450,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                   multiline
                   numberOfLines={3}
                   style={{ backgroundColor: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E2E8F0", minHeight: 80, textAlignVertical: 'top' }}
-                />
+ />
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -1482,7 +1485,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                   onPress={handleSaveProfile}
                   disabled={saving}
                   style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", width: isDesktop ? 200 : "100%" }}
-                >
+>
                   <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{saving ? "Saving..." : "Save Changes"}</Text>
                 </TouchableOpacity>
               </View>
@@ -1513,38 +1516,38 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
             <TextInput
               placeholder="Location Tag (e.g. Home, Office)"
               value={newLocation.label}
-              onChangeText={t => setNewLocation({...newLocation, label: t})}
+              onChangeText={t = /> setNewLocation({...newLocation, label: t})}
               style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
-            />
+ />
             <TextInput
               placeholder="Full Address Line"
               value={newLocation.address}
-              onChangeText={t => setNewLocation({...newLocation, address: t})}
+              onChangeText={t = /> setNewLocation({...newLocation, address: t})}
               style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
-            />
+ />
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
               <TextInput
                 placeholder="Latitude"
                 value={String(newLocation.latitude)}
-                onChangeText={t => setNewLocation({...newLocation, latitude: parseFloat(t) || 0})}
+                onChangeText={t = /> setNewLocation({...newLocation, latitude: parseFloat(t) || 0})}
                 keyboardType="numeric"
                 style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
-              />
+ />
               <TextInput
                 placeholder="Longitude"
                 value={String(newLocation.longitude)}
-                onChangeText={t => setNewLocation({...newLocation, longitude: parseFloat(t) || 0})}
+                onChangeText={t = /> setNewLocation({...newLocation, longitude: parseFloat(t) || 0})}
                 keyboardType="numeric"
                 style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
-              />
+ />
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <Text>Set as default delivery address</Text>
               <Switch
                 value={newLocation.is_default}
-                onValueChange={v => setNewLocation({...newLocation, is_default: v})}
-              />
+                onValueChange={v = /> setNewLocation({...newLocation, is_default: v})}
+ />
             </View>
 
             <View style={{ flexDirection: "row", gap: 12 }}>
@@ -1564,7 +1567,6 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
 
 function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const { width: screenWidth } = Dimensions.get("window");
-  const isDesktop = screenWidth > 1024;
   const [stats, setStats] = useState({ totalCustomers: 0, totalProviders: 0, totalMatches: 0 });
   const [pendingProviders, setPendingProviders] = useState([]);
   const [pendingVouching, setPendingVouching] = useState([]);
@@ -2196,7 +2198,7 @@ function CustomerInboxScreen({ user, showAlert }) {
         return res.ok;
       };
 
-      if (selectedFiles.length > 0) {
+      if (selectedFiles.length> 0) {
         for (const file of selectedFiles) {
           const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
           await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
@@ -2236,7 +2238,7 @@ function CustomerInboxScreen({ user, showAlert }) {
                   borderBottomColor: '#F1F5F9',
                   backgroundColor: selectedConv?.other_party_id === conv.other_party_id ? '#F0FDF4' : '#fff'
                 }}
-              >
+>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                   <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: '#fff', fontWeight: '800' }}>{conv.other_party_name.charAt(0)}</Text>
@@ -2309,7 +2311,7 @@ function CustomerInboxScreen({ user, showAlert }) {
               </ScrollView>
 
 
-              {selectedFiles.length > 0 && (
+              {selectedFiles.length> 0 && (
                 <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                     {selectedFiles.map((file, fIdx) => (
@@ -2335,7 +2337,7 @@ function CustomerInboxScreen({ user, showAlert }) {
                   placeholder="Type your reply..."
                   style={{ flex: 1, backgroundColor: '#F1F5F9', borderRadius: 12, padding: 12, fontSize: 14 }}
                   multiline
-                />
+ />
                 <TouchableOpacity onPress={handleSendReply} style={{ backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 }}>
                   <Text style={{ color: '#fff', fontWeight: '800' }}>Send</Text>
                 </TouchableOpacity>
@@ -2438,7 +2440,7 @@ function ProviderInboxScreen({ user, showAlert }) {
         return res.ok;
       };
 
-      if (selectedFiles.length > 0) {
+      if (selectedFiles.length> 0) {
         for (const file of selectedFiles) {
           const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
           await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
@@ -2478,7 +2480,7 @@ function ProviderInboxScreen({ user, showAlert }) {
                   borderBottomColor: '#F1F5F9',
                   backgroundColor: selectedConv?.other_party_id === conv.other_party_id ? '#F0FDF4' : '#fff'
                 }}
-              >
+>
                 <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                   <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: '#fff', fontWeight: '800' }}>{conv.other_party_name.charAt(0)}</Text>
@@ -2548,7 +2550,7 @@ return (
               </ScrollView>
 
 
-              {selectedFiles.length > 0 && (
+              {selectedFiles.length> 0 && (
                 <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
                     {selectedFiles.map((file, fIdx) => (
@@ -2574,7 +2576,7 @@ return (
                   placeholder="Type your reply..."
                   style={{ flex: 1, backgroundColor: '#F1F5F9', borderRadius: 12, padding: 12, fontSize: 14 }}
                   multiline
-                />
+ />
                 <TouchableOpacity onPress={handleSendReply} style={{ backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 }}>
                   <Text style={{ color: '#fff', fontWeight: '800' }}>Send</Text>
                 </TouchableOpacity>
@@ -2677,10 +2679,7 @@ export default function App() {
     setScreen("home");
   };
 
-  const renderScreen = () => {
-
-
-    // Hidden Admin Route Handling
+    const renderScreen = () => {
     if (screen === "admin-auth") {
       if (isAuthenticated && user?.roles?.includes('admin')) {
         setCurrentUser('admin');
@@ -2690,7 +2689,6 @@ export default function App() {
       return <AdminAuthScreen showAlert={showAlert} onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />;
     }
 
-    // Role-based Access Guard for Admin Screen
     if (screen === "admin" && (!user?.roles?.includes('admin') || currentUser !== 'admin')) {
       showAlert("Unauthorized access attempt.");
       handleLogout();
@@ -2702,12 +2700,9 @@ export default function App() {
     }
     if (!currentUser) {
       return <RoleSelectionScreen showAlert={showAlert} onSelectRole={async (role) => {
-        // Optimistic UI update
         setCurrentUser(role);
         if (role === "customer") setOnboardingComplete(true);
         else setOnboardingComplete(false);
-
-        // In a real app, we'd call the API here:
         try { await fetch(`${API_BASE}/auth/select-role`, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${user?.token}` }, body: JSON.stringify({ role }) }); } catch (e) { console.error("Role selection persistence failed", e); }
       }} />;
     }
@@ -2720,38 +2715,16 @@ export default function App() {
     }
 
     switch (screen) {
-      case "home":
-        return <HomeScreen
-          onNavigate={navigate} showAlert={showAlert}
-          currentUser={currentUser}
-
-          user={user} showAlert={showAlert}
-          onUpdateUser={(updated) => setUser(updated)}
-        />;
-      case "workerDetail":
-        return <WorkerDetailScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} user={user} />;
-      case "createBooking":
-        return <CreateBookingScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} user={user} showAlert={showAlert} />;
-      case "booking":
-        return <BookingsScreen onNavigate={navigate} showAlert={showAlert} user={user} showAlert={showAlert} currentUser={currentUser} />;
-      case "trust":
-        return <TrustScreen onNavigate={navigate} showAlert={showAlert} />;
-      case "admin":
-        return <AdminScreen onNavigate={navigate} showAlert={showAlert} onLogout={handleLogout} showAlert={showAlert} user={user} showAlert={showAlert} />;
+      case "home": return <HomeScreen onNavigate={navigate} currentUser={currentUser} user={user} onUpdateUser={(updated) => setUser(updated)} showAlert={showAlert} />;
+      case "workerDetail": return <WorkerDetailScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} />;
+      case "createBooking": return <CreateBookingScreen worker={screenData} onNavigate={navigate} user={user} showAlert={showAlert} />;
+      case "booking": return <BookingsScreen onNavigate={navigate} user={user} showAlert={showAlert} currentUser={currentUser} />;
+      case "trust": return <TrustScreen onNavigate={navigate} showAlert={showAlert} />;
+      case "admin": return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} showAlert={showAlert} />;
       case "messages":
         if (currentUser === 'provider') return <ProviderInboxScreen user={user} showAlert={showAlert} />;
         return <CustomerInboxScreen user={user} showAlert={showAlert} />;
-      case "profile":
-        return (
-          <ProfileScreen
-            onNavigate={navigate} showAlert={showAlert}
-            currentUser={currentUser}
-            isDesktop={isDesktop}
-            onLogout={handleLogout} showAlert={showAlert}
-            user={user} showAlert={showAlert}
-            onUpdateUser={(updated) => setUser(updated)}
-          />
-        );
+      case "profile": return <ProfileScreen onNavigate={navigate} currentUser={currentUser} onLogout={handleLogout} user={user} onUpdateUser={(updated) => setUser(updated)} showAlert={showAlert} />;
       case "active_jobs":
         return (
           <View style={{ flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' }}>
@@ -2766,14 +2739,7 @@ export default function App() {
             <Text style={{ marginTop: 8, color: COLORS.textMuted }}>K0.00</Text>
           </View>
         );
-      default:
-        return <HomeScreen
-          onNavigate={navigate} showAlert={showAlert}
-          currentUser={currentUser}
-
-          user={user} showAlert={showAlert}
-          onUpdateUser={(updated) => setUser(updated)}
-        />;
+      default: return <HomeScreen onNavigate={navigate} currentUser={currentUser} user={user} onUpdateUser={(updated) => setUser(updated)} showAlert={showAlert} />;
     }
   };
 
@@ -2806,11 +2772,11 @@ export default function App() {
             paddingHorizontal: 16,
             gap: 8,
           }}
-        >
+>
           <Image
             source={require("./assets/brand_logo.jpg")}
             style={{ width: 32, height: 32, borderRadius: 16, resizeMode: "contain" }}
-          />
+ />
           <Text
             style={{
               color: "#fff",
@@ -2818,7 +2784,7 @@ export default function App() {
               fontSize: 15,
               letterSpacing: 0.5,
             }}
-          >
+>
             WANTOK WORKFORCE
           </Text>
         </View>
@@ -2834,14 +2800,14 @@ export default function App() {
             navigate={navigate}
             activeNav={activeNav}
             onboardingComplete={onboardingComplete}
-          />
+ />
         ) : (
           <CustomerNavigationShell
             renderScreen={renderScreen}
             navigate={navigate}
             activeNav={activeNav}
             onboardingComplete={onboardingComplete}
-          />
+ />
         )}
       </View>
 
@@ -2853,7 +2819,7 @@ export default function App() {
             <TouchableOpacity
               onPress={() => setCustomAlert({ visible: false, message: "" })}
               style={{ backgroundColor: '#0B5932', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
-            >
+>
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>OK</Text>
             </TouchableOpacity>
           </View>
@@ -2881,7 +2847,7 @@ function WorkerCard({ worker, onPress }) {
         borderWidth: 1,
         borderColor: COLORS.border,
       }}
-    >
+>
       <View style={{ position: "relative" }}>
         <LinearGradient
           colors={["#3B82F6", "#1D4ED8"]}
@@ -2892,7 +2858,7 @@ function WorkerCard({ worker, onPress }) {
             alignItems: "center",
             justifyContent: "center",
           }}
-        >
+>
           <Text style={{ color: "#fff", fontWeight: "800", fontSize: 18 }}>
             {(worker?.name || "W").charAt(0)}
           </Text>
@@ -2910,7 +2876,7 @@ function WorkerCard({ worker, onPress }) {
               borderWidth: 2,
               borderColor: "#fff",
             }}
-          />
+ />
         )}
       </View>
 
@@ -2921,12 +2887,12 @@ function WorkerCard({ worker, onPress }) {
             justifyContent: "space-between",
             alignItems: "flex-start",
           }}
-        >
+>
           <View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text
                 style={{ fontSize: 15, fontWeight: "700", color: COLORS.text }}
-              >
+>
                 {worker?.name || "Anonymous Worker"}
               </Text>
               {worker?.is_verified && <TrustBadge />}
@@ -2938,7 +2904,7 @@ function WorkerCard({ worker, onPress }) {
                 color: COLORS.primary,
                 fontWeight: "600",
               }}
-            >
+>
               {worker?.primary_skill || "General Trade"}
             </Text>
                         {(() => {
@@ -2979,7 +2945,7 @@ function WorkerCard({ worker, onPress }) {
             gap: 8,
             marginVertical: 6,
           }}
-        >
+>
           <StarRating rating={worker?.rating || 5.0} />
           <Text style={{ fontSize: 12, fontWeight: "600", color: COLORS.text }}>
             {worker?.rating || "5.0"}
