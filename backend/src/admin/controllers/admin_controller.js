@@ -28,7 +28,7 @@ class AdminController {
       let params = [];
 
       if (role) {
-        query += ' WHERE role = $1';
+        query += ' WHERE EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = users.id AND ur.role_name = $1)';
         params.push(role);
       }
 
