@@ -146,7 +146,6 @@ const corsOptions = {
     const allowedOrigins = [
         "http://wantok.dspng.tech",
         "https://wantok.dspng.tech",
-        "https://wantok-workforce.onrender.com",
         "http://localhost:3000",
         "http://localhost:19006",
         "http://localhost:8081"
@@ -154,7 +153,6 @@ const corsOptions = {
 
     const isAllowed = !origin ||
                      allowedOrigins.indexOf(origin) !== -1 ||
-                     origin.endsWith(".onrender.com") ||
                      origin.endsWith(".dspng.tech");
 
     if (isAllowed) {

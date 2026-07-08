@@ -2107,7 +2107,6 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   }, [activeTab]);
 
   useEffect(() => { if (activeTab === "users") fetchUsers(); }, [roleFilter]);
-      <View style={{ backgroundColor: "#1E293B" }}>
   const handleUserAction = async (userId, action, data = {}) => {
     try {
       const adminToken = user?.token;
