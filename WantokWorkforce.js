@@ -1923,7 +1923,7 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
   );
 }
 
-function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
+function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert, isDesktop }) {
   const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || "");
   const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsapp_number || "");
   const [physicalAddress, setPhysicalAddress] = useState(user?.physical_address || "");
@@ -3343,7 +3343,7 @@ export default function App() {
           <ProfileScreen
             onNavigate={navigate} showAlert={showAlert}
             currentUser={currentUser}
-
+            isDesktop={isDesktop}
             onLogout={handleLogout} showAlert={showAlert}
             user={user} showAlert={showAlert}
             onUpdateUser={(updated) => setUser(updated)}
