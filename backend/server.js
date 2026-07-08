@@ -176,7 +176,7 @@ app.use(express.json());
 
 // Domain API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/v1/customers', customerRoutes);
+app.use('/api/customer/profile', customerRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);

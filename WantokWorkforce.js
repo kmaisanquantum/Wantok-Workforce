@@ -1940,7 +1940,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
 
   const fetchSavedLocations = async () => {
     try {
-      const res = await fetch(`${API_BASE}/v1/customers/locations`, {
+      const res = await fetch(`${API_BASE}/api/customer/profile/locations`, {
         headers: { "Authorization": `Bearer ${user?.token}` }
       });
       const data = await res.json();
@@ -1949,9 +1949,13 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
   };
 
   const handleSaveProfile = async () => {
+    if (!phoneNumber || !physicalAddress) {
+      showAlert("Phone Number and Physical Address are required.");
+      return;
+    }
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/v1/customers/profile`, {
+      const res = await fetch(`${API_BASE}/api/customer/profile/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1960,7 +1964,8 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
         body: JSON.stringify({
           phone_number: phoneNumber,
           whatsapp_number: whatsappNumber,
-          physical_address: physicalAddress
+          physical_address: physicalAddress,
+          saved_locations: savedLocations.filter(l => l.isNew)
         })
       });
       const data = await res.json();
@@ -1977,24 +1982,15 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
     }
   };
 
-  const handleAddLocation = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/v1/customers/locations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(newLocation)
-      });
-      const data = await res.json();
-      if (data.success) {
-        setShowLocationModal(false);
-        setNewLocation({ label: '', address: '', longitude: 0, latitude: 0, is_default: false });
-        fetchSavedLocations();
-        showAlert("Location added!");
-      }
-    } catch (e) { showAlert("Error adding location"); }
+  const handleAddLocation = () => {
+    if (!newLocation.label || !newLocation.address) {
+      showAlert("Please enter a label and address");
+      return;
+    }
+    setSavedLocations([...savedLocations, { ...newLocation, isNew: true }]);
+    setShowLocationModal(false);
+    setNewLocation({ label: '', address: '', longitude: 0, latitude: 0, is_default: false });
+    showAlert("Location added to list. Click Save Changes to persist.");
   };
 
   return (
