@@ -880,12 +880,11 @@ function TrustScreen({ onNavigate, showAlert }) {
           ))}
           </View>
         </View>
-
+      </ScrollView>
     </View>
-
-
-  </ScrollView></View>);
+  );
 }
+
 
 function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
   const [bookings, setBookings] = useState([]);
@@ -1148,7 +1147,7 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
         Configure your basic storefront details to start accepting jobs immediately.
       </Text>
 
-      <InputField label="Business Name" value={formData.business_name} onChange={v = /> setFormData({...formData, business_name: v})} placeholder="Trading name (e.g. John's Electric)" />
+      <InputField label="Business Name" value={formData.business_name} onChange={v => setFormData({...formData, business_name: v})} placeholder="Trading name (e.g. John's Electric)" />
 
       <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.textLight, marginBottom: 6 }}>Service Category</Text>
       <View style={{ backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border }}>
@@ -1169,14 +1168,14 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
         </ScrollView>
       </View>
 
-      <InputField label="Professional Bio" value={formData.bio} onChange={v = /> setFormData({...formData, bio: v})} placeholder="Briefly describe your skills..." multiline />
+      <InputField label="Professional Bio" value={formData.bio} onChange={v => setFormData({...formData, bio: v})} placeholder="Briefly describe your skills..." multiline />
 
       <View style={{ flexDirection: 'row', gap: 16 }}>
         <View style={{ flex: 1 }}>
-          <InputField label="Hourly Rate (PGK)" value={formData.hourly_rate} onChange={v = /> setFormData({...formData, hourly_rate: v})} placeholder="50.00" keyboardType="numeric" />
+          <InputField label="Hourly Rate (PGK)" value={formData.hourly_rate} onChange={v => setFormData({...formData, hourly_rate: v})} placeholder="50.00" keyboardType="numeric" />
         </View>
         <View style={{ flex: 1 }}>
-          <InputField label="Operating Suburb" value={formData.operating_suburb} onChange={v = /> setFormData({...formData, operating_suburb: v})} placeholder="e.g. Waigani" />
+          <InputField label="Operating Suburb" value={formData.operating_suburb} onChange={v => setFormData({...formData, operating_suburb: v})} placeholder="e.g. Waigani" />
         </View>
       </View>
 
@@ -1280,36 +1279,36 @@ function ProviderProfileForm({ user, showAlert }) {
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>Storefront Configuration</Text>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
-        <InputField label="Business Name" value={profile.business_name} onChange={t = /> setProfile({...profile, business_name: t})} placeholder="Trading name" />
-        <InputField label="Service Category" value={profile.service_category} onChange={t = /> setProfile({...profile, service_category: t})} placeholder="e.g. Electrical, Plumbing" />
+        <InputField label="Business Name" value={profile.business_name} onChange={t => setProfile({...profile, business_name: t})} placeholder="Trading name" />
+        <InputField label="Service Category" value={profile.service_category} onChange={t => setProfile({...profile, service_category: t})} placeholder="e.g. Electrical, Plumbing" />
       </View>
 
-      <InputField label="Professional Bio" value={profile.bio} onChange={t = /> setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
+      <InputField label="Professional Bio" value={profile.bio} onChange={t => setProfile({...profile, bio: t})} placeholder="Skills & qualification overview" multiline />
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t = /> setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
-        <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t = /> setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
+        <InputField label="Hourly Rate (PGK)" value={profile.hourly_rate} onChange={t => setProfile({...profile, hourly_rate: t})} placeholder="0.00" keyboardType="numeric" />
+        <InputField label="Operating Suburb" value={profile.operating_suburb} onChange={t => setProfile({...profile, operating_suburb: t})} placeholder="e.g. Waigani, Boroko" />
       </View>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Primary Phone" value={profile.primary_phone} onChange={t = /> setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
-        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t = /> setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" note="Media/Coordinate sharing channel" />
+        <InputField label="Primary Phone" value={profile.primary_phone} onChange={t => setProfile({...profile, primary_phone: t})} placeholder="Voice line" />
+        <InputField label="WhatsApp Business" value={profile.whatsapp_business} onChange={t => setProfile({...profile, whatsapp_business: t})} placeholder="Channel for media" note="Media/Coordinate sharing channel" />
       </View>
 
       <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginTop: 10, marginBottom: 16 }}>Financial / Payout Details</Text>
 
       <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 16 }}>
-        <InputField label="Bank Name" value={profile.bank_name} onChange={t = /> setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
-        <InputField label="Account Name" value={profile.bank_account_name} onChange={t = /> setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
+        <InputField label="Bank Name" value={profile.bank_name} onChange={t => setProfile({...profile, bank_name: t})} placeholder="e.g. BSP, Kina Bank" />
+        <InputField label="Account Name" value={profile.bank_account_name} onChange={t => setProfile({...profile, bank_account_name: t})} placeholder="Name on statement" />
       </View>
-      <InputField label="Account Number" value={profile.bank_account_number} onChange={t = /> setProfile({...profile, bank_account_number: t})} placeholder="EFT transfer number" />
+      <InputField label="Account Number" value={profile.bank_account_number} onChange={t => setProfile({...profile, bank_account_number: t})} placeholder="EFT transfer number" />
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginVertical: 20, padding: 16, backgroundColor: "#F8FAFC", borderRadius: 12 }}>
         <View>
           <Text style={{ fontWeight: "700", color: COLORS.text }}>Accepting New Jobs</Text>
           <Text style={{ fontSize: 12, color: "#64748B" }}>Toggle visibility in search results</Text>
         </View>
-        <Switch value={profile.is_accepting_jobs} onValueChange={v = /> setProfile({...profile, is_accepting_jobs: v})} />
+        <Switch value={profile.is_accepting_jobs} onValueChange={v => setProfile({...profile, is_accepting_jobs: v})} />
       </View>
 
       <View style={{ alignItems: isDesktop ? "flex-end" : "stretch", marginBottom: 20 }}>
@@ -1516,27 +1515,27 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
             <TextInput
               placeholder="Location Tag (e.g. Home, Office)"
               value={newLocation.label}
-              onChangeText={t = /> setNewLocation({...newLocation, label: t})}
+              onChangeText={t => setNewLocation({...newLocation, label: t})}
               style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
  />
             <TextInput
               placeholder="Full Address Line"
               value={newLocation.address}
-              onChangeText={t = /> setNewLocation({...newLocation, address: t})}
+              onChangeText={t => setNewLocation({...newLocation, address: t})}
               style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, marginBottom: 12 }}
  />
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
               <TextInput
                 placeholder="Latitude"
                 value={String(newLocation.latitude)}
-                onChangeText={t = /> setNewLocation({...newLocation, latitude: parseFloat(t) || 0})}
+                onChangeText={t => setNewLocation({...newLocation, latitude: parseFloat(t) || 0})}
                 keyboardType="numeric"
                 style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
  />
               <TextInput
                 placeholder="Longitude"
                 value={String(newLocation.longitude)}
-                onChangeText={t = /> setNewLocation({...newLocation, longitude: parseFloat(t) || 0})}
+                onChangeText={t => setNewLocation({...newLocation, longitude: parseFloat(t) || 0})}
                 keyboardType="numeric"
                 style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8 }}
  />
@@ -1546,7 +1545,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
               <Text>Set as default delivery address</Text>
               <Switch
                 value={newLocation.is_default}
-                onValueChange={v = /> setNewLocation({...newLocation, is_default: v})}
+                onValueChange={v => setNewLocation({...newLocation, is_default: v})}
  />
             </View>
 
