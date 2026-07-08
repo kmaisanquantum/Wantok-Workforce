@@ -1074,856 +1074,133 @@ function RoleSelectionScreen({ onSelectRole, showAlert }) {
 }
 
 function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
-  const [trade, setTrade] = useState("");
-  const [city, setCity] = useState("");
+  const [formData, setFormData] = useState({
+    business_name: "",
+    service_category: "",
+    bio: "",
+    hourly_rate: "",
+    operating_suburb: ""
+  });
   const [loading, setLoading] = useState(false);
 
   const handleComplete = async () => {
-    if (!trade || !city) {
-      showAlert("Please fill in both fields.");
+    if (!formData.business_name || !formData.service_category || !formData.operating_suburb || !formData.hourly_rate) {
+      showAlert("Please fill in all required storefront fields.");
       return;
     }
     setLoading(true);
-    let data;
     try {
-      const response = await fetch(`${API_BASE}/auth/profile`, {
-        method: 'PATCH',
+      const response = await fetch(`${API_BASE}/v1/providers/profile`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user?.token}`
         },
-        body: JSON.stringify({
-          primary_skill: trade,
-          location_name: city
-        })
+        body: JSON.stringify(formData)
       });
 
-      data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
+      const data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
       if (response.ok) {
-        onComplete({ primary_skill: trade, location_name: city });
+        onComplete(formData);
       } else {
-        showAlert(data.error || "Failed to update profile.");
+        showAlert(data.error || "Failed to setup storefront.");
       }
     } catch (error) {
-      console.error("Trade profile update error:", error);
+      console.error("Storefront setup error:", error);
       showAlert("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const InputField = ({ label, value, onChange, placeholder, keyboardType = 'default', multiline = false }) => (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>{label}</Text>
+      <TextInput
+        style={{
+          backgroundColor: "#fff",
+          borderWidth: 1,
+          borderColor: COLORS.border,
+          borderRadius: 12,
+          padding: 14,
+          fontSize: 15,
+          minHeight: multiline ? 80 : 50,
+          textAlignVertical: multiline ? 'top' : 'center'
+        }}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType}
+        multiline={multiline}
+      />
+    </View>
+  );
+
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 24 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ padding: 24 }}>
       <Text style={{ fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 8, marginTop: 40 }}>
-        Complete Your Trade Profile
+        Setup Your Storefront
       </Text>
       <Text style={{ fontSize: 14, color: COLORS.textMuted, marginBottom: 32 }}>
-        Tell us a bit more about your services to get started.
+        Configure your basic storefront details to start accepting jobs immediately.
       </Text>
 
-      <View style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-          Trade Type
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: "#fff",
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            borderRadius: 12,
-            padding: 14,
-            fontSize: 15,
-          }}
-          placeholder="e.g. Electrician, Plumber, Tailor"
-          value={trade}
-          onChangeText={setTrade}
-        />
+      <InputField label="Business Name" value={formData.business_name} onChange={v => setFormData({...formData, business_name: v})} placeholder="Trading name (e.g. John's Electric)" />
+
+      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.textLight, marginBottom: 6 }}>Service Category</Text>
+      <View style={{ backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 10 }}>
+          {categories?.map((cat) => (
+            <TouchableOpacity
+              key={cat.label}
+              onPress={() => setFormData({...formData, service_category: cat.label})}
+              style={{
+                paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 8,
+                backgroundColor: formData.service_category === cat.label ? COLORS.primary : '#F3F4F6',
+                borderWidth: 1, borderColor: COLORS.border
+              }}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '600', color: formData.service_category === cat.label ? '#fff' : COLORS.text }}>{cat.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <View style={{ marginBottom: 32 }}>
-        <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-          City Location
-        </Text>
-        <TextInput
-          style={{
-            backgroundColor: "#fff",
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            borderRadius: 12,
-            padding: 14,
-            fontSize: 15,
-          }}
-          placeholder="e.g. Port Moresby, Lae"
-          value={city}
-          onChangeText={setCity}
-        />
+      <InputField label="Professional Bio" value={formData.bio} onChange={v => setFormData({...formData, bio: v})} placeholder="Briefly describe your skills..." multiline />
+
+      <View style={{ flexDirection: 'row', gap: 16 }}>
+        <View style={{ flex: 1 }}>
+          <InputField label="Hourly Rate (PGK)" value={formData.hourly_rate} onChange={v => setFormData({...formData, hourly_rate: v})} placeholder="50.00" keyboardType="numeric" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <InputField label="Operating Suburb" value={formData.operating_suburb} onChange={v => setFormData({...formData, operating_suburb: v})} placeholder="e.g. Waigani" />
+        </View>
       </View>
 
       <TouchableOpacity
         onPress={handleComplete}
-        disabled={!trade || !city || loading}
+        disabled={loading}
         style={{
-          backgroundColor: (!trade || !city || loading) ? COLORS.textLight : COLORS.primary,
-          paddingVertical: 16,
+          backgroundColor: COLORS.primary,
           borderRadius: 14,
+          paddingVertical: 16,
           alignItems: "center",
+          marginTop: 20,
+          marginBottom: 40,
+          shadowColor: COLORS.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 5,
         }}
       >
-        <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-          {loading ? "SAVING..." : "Complete Profile"}
+        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>
+          {loading ? "SAVING..." : "ACTIVATE MY STOREFRONT"}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
-
-function AuthScreen({ onAuth, showAlert }) {
-  const [loading, setLoading] = useState(false);
-  const [dbStatus, setDbStatus] = useState("checking");
-
-  useEffect(() => {
-    const checkDB = async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      try {
-        // First check basic API health
-        console.log(`🔍 Checking system health at: ${API_BASE}/health`);
-        const apiRes = await fetch(`${API_BASE}/health`, { signal: controller.signal });
-        console.log(`📡 API Health Response: ${apiRes.status}`);
-        if (apiRes.ok) {
-          // If API is healthy, check DB health
-          const dbRes = await fetch(`${API_BASE}/health/db`, { signal: controller.signal });
-          if (dbRes.ok) setDbStatus("connected");
-          else setDbStatus("online (db issues)");
-        } else {
-          setDbStatus("error");
-        }
-      } catch (e) {
-        console.error("❌ Health check failed:", e);
-        setDbStatus("offline");
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
-    checkDB();
-  }, []);
-  const [mode, setMode] = useState("signin");
-  const [signUpStep, setSignUpStep] = useState(1);
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [identifier, setIdentifier] = useState(""); // Unified local state for Sign In to fix lag
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSignIn = async () => {
-    if (!identifier || !password) {
-      showAlert("Please enter both identifier (Phone/Email) and password.");
-      return;
-    }
-    if (loading) return;
-    setLoading(true);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    let data;
-    try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
-        signal: controller.signal
-      });
-
-      data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
-
-      if (response.ok) {
-        onAuth({ ...data.user, token: data.token, active_persona: (data.user.roles && data.user.roles.includes('admin')) ? 'admin' : data.user.role }, false);
-      } else {
-        showAlert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signin failed"));
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        showAlert('Server connection timeout. Please check backend logs.');
-      } else {
-        console.error("🚨 Full Network Error (SignIn):", error);
-        showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
-      }
-    } finally {
-      clearTimeout(timeoutId);
-      setLoading(false);
-    }
-  };
-
-  const handleSignUpNext = async () => {
-    if (signUpStep === 1) {
-      if (!name || !email) {
-        showAlert("Please provide your full name and email address.");
-        return;
-      }
-      setSignUpStep(2);
-    } else {
-      if (!phone || !password) {
-        showAlert("Please provide your phone number and create a password.");
-        return;
-      }
-      if (password.length < 6) {
-        showAlert("Password must be at least 6 characters long.");
-        return;
-      }
-      if (loading) return;
-      setLoading(true);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-      let data;
-      try {
-        const response = await fetch(`${API_BASE}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, phone, password }),
-          signal: controller.signal
-        });
-
-        data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
-
-        if (response.ok) {
-          console.log('✅ Registration success payload:', data);
-          onAuth({ ...data.user, token: data.token, active_persona: data.user.role }, true);
-        } else {
-          showAlert("Network Status: " + response.status + "\nDetails: " + (data.details || data.error || "Signup failed"));
-        }
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          showAlert('Server connection timeout. Please check backend logs.');
-        } else {
-          console.error("🚨 Full Network Error (SignUp):", error);
-          showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Please verify your credentials or check connection."));
-        }
-      } finally {
-        clearTimeout(timeoutId);
-        setLoading(false);
-      }
-    }
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      <LinearGradient
-        colors={[COLORS.primaryDark, COLORS.primary]}
-        style={{ height: 200, justifyContent: "center", alignItems: "center" }}
-      >
-        <Image
-          source={require("./assets/brand_logo.jpg")}
-          style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 10 }}
-        />
-        <Text style={{ color: "#fff", fontSize: 24, fontWeight: "900" }}>
-          WANTOK WORKFORCE
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 12, backgroundColor: "rgba(0,0,0,0.2)", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dbStatus === "connected" ? "#4ADE80" : (dbStatus === "checking" ? "#FBBF24" : "#EF4444"), marginRight: 6 }} />
-          <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700", textTransform: "uppercase" }}>
-            System Status: {dbStatus}
-          </Text>
-        </View>
-      </LinearGradient>
-
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 24, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, maxWidth: 450, width: "100%", alignSelf: "center" }}>
-          <Text style={{ fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 8 }}>
-            {mode === "signin" ? "Welcome Back" : "Create Account"}
-          </Text>
-          <Text style={{ fontSize: 14, color: COLORS.textMuted, marginBottom: 24 }}>
-            {mode === "signin"
-              ? "Sign in to continue your journey"
-              : `Step ${signUpStep} of 2: ${signUpStep === 1 ? "Basic Info" : "Security"}`}
-          </Text>
-
-          {mode === "signin" ? (
-            <>
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                  Phone Number or Email
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: "#fff",
-                    borderWidth: 1,
-                    borderColor: COLORS.border,
-                    borderRadius: 10,
-                    padding: 12,
-                    fontSize: 14,
-                  }}
-                  placeholder="email@example.com"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  autoCapitalize="none"
-                />
-              </View>
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                  Password
-                </Text>
-                <View style={{ position: 'relative' }}>
-                  <TextInput
-                    style={{
-                      backgroundColor: "#fff",
-                      borderWidth: 1,
-                      borderColor: COLORS.border,
-                      borderRadius: 10,
-                      padding: 12,
-                      paddingRight: 50,
-                      fontSize: 14,
-                    }}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: 12, top: 12 }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                      {showPassword ? "HIDE" : "SHOW"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={handleSignIn}
-                style={{
-                  backgroundColor: COLORS.primary,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>{loading ? "Signing In..." : "Sign In"}</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              {signUpStep === 1 ? (
-                <>
-                  <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                      Full Name
-                    </Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: "#fff",
-                        borderWidth: 1,
-                        borderColor: COLORS.border,
-                        borderRadius: 10,
-                        padding: 12,
-                        fontSize: 14,
-                      }}
-                      placeholder="e.g. John Smith"
-                      value={name}
-                      onChangeText={setName}
-                    />
-                  </View>
-                  <View style={{ marginBottom: 24 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                      Email Address
-                    </Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: "#fff",
-                        borderWidth: 1,
-                        borderColor: COLORS.border,
-                        borderRadius: 10,
-                        padding: 12,
-                        fontSize: 14,
-                      }}
-                      placeholder="name@example.com"
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                      Phone Number
-                    </Text>
-                    <TextInput
-                      style={{
-                        backgroundColor: "#fff",
-                        borderWidth: 1,
-                        borderColor: COLORS.border,
-                        borderRadius: 10,
-                        padding: 12,
-                        fontSize: 14,
-                      }}
-                      placeholder="e.g. 7000 1234"
-                      value={phone}
-                      onChangeText={setPhone}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                  <View style={{ marginBottom: 24 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: COLORS.textLight, marginBottom: 6 }}>
-                      Create Password
-                    </Text>
-                    <View style={{ position: 'relative' }}>
-                      <TextInput
-                        style={{
-                          backgroundColor: "#fff",
-                          borderWidth: 1,
-                          borderColor: COLORS.border,
-                          borderRadius: 10,
-                          padding: 12,
-                          paddingRight: 50,
-                          fontSize: 14,
-                        }}
-                        placeholder="Min. 8 characters"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                      />
-                      <TouchableOpacity
-                        onPress={() => setShowPassword(!showPassword)}
-                        style={{ position: 'absolute', right: 12, top: 12 }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: COLORS.primary }}>
-                          {showPassword ? "HIDE" : "SHOW"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              )}
-              <TouchableOpacity
-                onPress={handleSignUpNext}
-                style={{
-                  backgroundColor: COLORS.primary,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>
-                  {loading ? "Creating Account..." : (signUpStep === 1 ? "Next Step" : "Create Account")}
-                </Text>
-              </TouchableOpacity>
-              {signUpStep === 2 && (
-                <TouchableOpacity onPress={() => setSignUpStep(1)} style={{ alignItems: "center", marginBottom: 16 }}>
-                  <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>Back to Basic Info</Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-
-          <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
-            <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>
-              {mode === "signin" ? "Don't have an account?" : "Already have an account?"}
-            </Text>
-            <TouchableOpacity onPress={() => {
-              setMode(mode === "signin" ? "signup" : "signin");
-              setSignUpStep(1);
-            }}>
-              <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 14 }}>
-                {mode === "signin" ? "Sign Up" : "Sign In"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-function AdminAuthScreen({ onAuth, showAlert }) {
-  const [loading, setLoading] = useState(false);
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleAdminLogin = async () => {
-    if (!identifier || !password) {
-      showAlert("Please enter admin credentials.");
-      return;
-    }
-    setLoading(true);
-
-    let data;
-    try {
-      const response = await fetch(`${API_BASE}/auth/admin-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
-      });
-
-      data = await response.json().catch(() => ({ error: 'Invalid response from server' }));
-
-      if (response.ok) {
-        // Strict Role Check: Must be admin
-        if (data.user.roles && data.user.roles.includes('admin')) {
-          onAuth({ ...data.user, token: data.token, active_persona: 'admin' }, false);
-        } else {
-          showAlert("Access Denied: Administrative privileges required.");
-          if (Platform.OS === 'web') window.location.href = '/';
-        }
-      } else {
-        showAlert("Network Status: " + response.status + "\nDetails: " + (data.error || "Login failed"));
-      }
-    } catch (error) {
-      console.error("🚨 Full Network Error (AdminLogin):", error);
-      showAlert("Network Status: OFFLINE\nDetails: " + (data?.message || data?.error || error.message || "Unknown network error."));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-    return (
-      <View style={{ flex: 1, backgroundColor: "#0F172A", justifyContent: "center", padding: 24 }}>
-        <View style={{ maxWidth: 450, width: "100%", alignSelf: "center" }}>
-          <View style={{ alignItems: "center", marginBottom: 40 }}>
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#334155", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-              <Text style={{ fontSize: 32 }}>🔐</Text>
-            </View>
-            <Text style={{ color: "#fff", fontSize: 24, fontWeight: "900", letterSpacing: 1 }}>
-              ADMIN PORTAL
-            </Text>
-            <Text style={{ color: "#94A3B8", fontSize: 14, marginTop: 8 }}>
-              Wantok Workforce Back-Office
-            </Text>
-          </View>
-
-          <View style={{ backgroundColor: "#1E293B", borderRadius: 16, padding: 24, elevation: 8 }}>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: "#94A3B8", fontSize: 12, fontWeight: "700", marginBottom: 8, textTransform: "uppercase" }}>
-                Admin Identifier
-              </Text>
-              <TextInput
-                style={{ backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#334155" }}
-                placeholder="Username or Email"
-                placeholderTextColor="#475569"
-                value={identifier}
-                onChangeText={setIdentifier}
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: "#94A3B8", fontSize: 12, fontWeight: "700", marginBottom: 8, textTransform: "uppercase" }}>
-                Security Key
-              </Text>
-              <View style={{ position: "relative" }}>
-                <TextInput
-                  style={{ backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 12, paddingRight: 48, borderWidth: 1, borderColor: "#334155" }}
-                  placeholder="Enter password"
-                  placeholderTextColor="#475569"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: 12, top: 12 }}
-                >
-                  <Text style={{ fontSize: 18 }}>{showPassword ? "👁️" : "🔒"}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleAdminLogin}
-              disabled={loading}
-              style={{
-                backgroundColor: "#3B82F6",
-                padding: 16,
-                borderRadius: 8,
-                alignItems: "center",
-                opacity: loading ? 0.7 : 1
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-                {loading ? "AUTHENTICATING..." : "AUTHORIZE ACCESS"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => { if (Platform.OS === "web") window.location.href = "/"; }}
-            style={{ marginTop: 24, alignItems: "center" }}
-          >
-            <Text style={{ color: "#475569", fontSize: 13 }}>Return to Public Site</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-}
-function WorkerDetailScreen({ worker, onNavigate, showAlert, user }) {
-  const [isChatVisible, setIsChatVisible] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const fileInputRef = useRef(null);
-
-  const handleFileChange = (event) => {
-    const files = Array.from(event.target.files);
-    setSelectedFiles(prev => [...prev, ...files]);
-  };
-
-  const removeFile = (index) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const [loadingHistory, setLoadingHistory] = useState(false);
-
-  const fetchHistory = async () => {
-    if (!user || !worker) return;
-    try {
-      const res = await fetch(`${API_BASE}/messages?providerId=${worker.id}&userId=${user.id}`, {
-        headers: { "Authorization": `Bearer ${user.token}` }
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) setMessages(data);
-    } catch (e) {
-      console.error("Chat history fetch failed:", e);
-    }
-  };
-
-  useEffect(() => {
-    let interval;
-    if (isChatVisible) {
-      fetchHistory();
-      interval = setInterval(fetchHistory, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [isChatVisible]);
-
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() && selectedFiles.length === 0) return;
-    if (!user || !worker) return;
-
-    try {
-      // For each file, we'd normally upload to S3/Cloudinary first.
-      // Since this is a specialized task, we will simulate the file upload and send metadata.
-      // In a real production app, we would use FormData if the backend supports direct multipart.
-
-      const sendPayload = async (fileData = null) => {
-        const body = {
-          receiverId: worker.id,
-          providerId: worker.id,
-          text: newMessage.trim()
-        };
-        if (fileData) {
-          body.fileUrl = fileData.url;
-          body.fileName = fileData.name;
-          body.fileType = fileData.type;
-        }
-
-        const res = await fetch(`${API_BASE}/messages`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${user.token}`
-          },
-          body: JSON.stringify(body)
-        });
-        return res.ok;
-      };
-
-      if (selectedFiles.length > 0) {
-        for (const file of selectedFiles) {
-          // Simulation: convert file to a local object URL for preview/demo
-          // In reality, this would be the URL from the file storage service
-          const simulatedUrl = Platform.OS === 'web' ? URL.createObjectURL(file) : 'https://via.placeholder.com/150';
-          await sendPayload({ url: simulatedUrl, name: file.name, type: file.type });
-        }
-      } else {
-        await sendPayload();
-      }
-
-      setNewMessage("");
-      setSelectedFiles([]);
-      fetchHistory();
-    } catch (e) {
-      showAlert("Failed to send message");
-    }
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-
-      <ScrollView>
-        <View style={{ padding: 20, alignItems: "center" }}>
-          <LinearGradient
-            colors={["#3B82F6", "#1D4ED8"]}
-            style={{ width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", marginBottom: 16 }}
-          >
-            <Text style={{ color: "#fff", fontSize: 40, fontWeight: "800" }}>{worker?.name?.charAt(0) || "W"}</Text>
-          </LinearGradient>
-          <Text style={{ fontSize: 24, fontWeight: "800", color: COLORS.text }}>{worker?.name}</Text>
-          <Text style={{ fontSize: 16, color: COLORS.primary, fontWeight: "600", marginTop: 4 }}>{worker?.primary_skill}</Text>
-        </View>
-        <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 8, color: COLORS.text }}>About</Text>
-          <Text style={{ color: COLORS.textMuted, lineHeight: 20 }}>{worker?.bio || "No professional bio provided yet."}</Text>
-          <TouchableOpacity
-            onPress={() => onNavigate("createBooking", worker)}
-            style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", marginTop: 30 }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "800" }}>Book Now</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setIsChatVisible(true)}
-            style={{ borderHorizontal: 0, borderWidth: 1, borderColor: '#0B5932', padding: 16, borderRadius: 12, alignItems: "center", marginTop: 12 }}
-          >
-            <Text style={{ color: "#0B5932", fontWeight: "800" }}>Chat Now</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => onNavigate("home")} style={{ marginTop: 16, alignItems: "center" }}>
-            <Text style={{ color: COLORS.textMuted }}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-      <Modal visible={isChatVisible} animationType="slide" transparent={true}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.text }}>Chat with {worker?.name}</Text>
-              <TouchableOpacity onPress={() => setIsChatVisible(false)}>
-                <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1, marginBottom: 20 }}>
-              {(messages || []).map((msg, idx) => {
-                const isMine = msg.sender_id === user?.id;
-                return (
-
-                  <View key={idx} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', backgroundColor: isMine ? '#0B5932' : '#F3F4F6', padding: 12, borderRadius: 12, marginBottom: 8, maxWidth: '80%' }}>
-                    {msg.file_url && (
-                      <View style={{ marginBottom: 8 }}>
-                        {msg.file_type && msg.file_type.startsWith('image/') ? (
-                          <TouchableOpacity onPress={() => showAlert("Image preview modal here")}>
-                            <Image source={{ uri: msg.file_url }} style={{ width: 200, height: 150, borderRadius: 8, resizeMode: 'cover' }} />
-                          </TouchableOpacity>
-                        ) : (
-                          <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.open(msg.file_url, '_blank'); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.05)', padding: 8, borderRadius: 8 }}>
-                            <Text style={{ fontSize: 20 }}>📄</Text>
-                            <View style={{ flex: 1 }}>
-                              <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: isMine ? '#fff' : COLORS.text }}>{msg.file_name}</Text>
-                              <Text style={{ fontSize: 10, color: isMine ? 'rgba(255,255,255,0.7)' : COLORS.textMuted }}>{msg.file_type || 'Document'}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
-
-                    <Text style={{ color: isMine ? '#fff' : COLORS.text, fontSize: 14 }}>{msg.text}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-
-              {selectedFiles.length > 0 && (
-                <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: COLORS.border }}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                    {selectedFiles.map((file, fIdx) => (
-                      <View key={fIdx} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '600', maxWidth: 120 }} numberOfLines={1}>{file.name}</Text>
-                        <TouchableOpacity onPress={() => removeFile(fIdx)} style={{ backgroundColor: '#CBD5E1', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ fontSize: 10, fontWeight: '900', color: '#fff' }}>×</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-<View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" style={{ display: 'none' }} />
-              <TouchableOpacity onPress={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 20 }}>📎</Text>
-              </TouchableOpacity>
-
-              <TextInput
-                placeholder="Type a message..."
-                value={newMessage}
-                onChangeText={setNewMessage}
-                style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 10, padding: 12 }}
-              />
-              <TouchableOpacity onPress={handleSendMessage} style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 10 }}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-
-
-    </View>
-  );
-}
-
-function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleBooking = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/bookings/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
-        },
-        body: JSON.stringify({
-          service_type: worker?.primary_skill || "General Service",
-          price: worker?.hourly_rate || 50.00,
-          scheduled_at: new Date().toISOString()
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        showAlert("Booking Request Sent!");
-        onNavigate("booking");
-      } else {
-        showAlert(data.error || "Failed to create booking");
-      }
-    } catch (e) {
-      showAlert("Error creating booking: " + e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 20, justifyContent: "center" }}>
-      <Text style={{ fontSize: 24, fontWeight: "800", textAlign: "center", marginBottom: 10, color: COLORS.text }}>Book {worker?.name}</Text>
-      <Text style={{ textAlign: "center", color: COLORS.textMuted, marginBottom: 10 }}>Service: {worker?.primary_skill}</Text>
-      <Text style={{ textAlign: "center", color: COLORS.primary, fontWeight: '700', fontSize: 18, marginBottom: 30 }}>K{worker?.hourly_rate}/hr</Text>
-
-      <TouchableOpacity
-        onPress={handleBooking}
-        disabled={loading}
-        style={{ backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: "center", opacity: loading ? 0.6 : 1 }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "800" }}>{loading ? "Sending..." : "Confirm Booking"}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => onNavigate("home")} style={{ marginTop: 20, alignItems: "center" }}>
-        <Text style={{ color: COLORS.textMuted }}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-
 
 function ProviderProfileForm({ user, showAlert, isDesktop }) {
   const [profile, setProfile] = useState({
