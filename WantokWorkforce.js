@@ -2329,6 +2329,53 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const [queue, setQueue] = useState([]);
   const [systemSettings, setSystemSettings] = useState({ match_radius: 50, platform_fee: 10, maintenance_mode: false });
 
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [isMatchDetailModalVisible, setIsMatchDetailModalVisible] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const fetchMatchDetails = async (matchId) => {
+    setLoadingDetails(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/queue/${matchId}`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedMatch(data.data);
+        setIsMatchDetailModalVisible(true);
+      } else {
+        showAlert(data.error || "Failed to load match details");
+      }
+    } catch (e) {
+      showAlert("Network error loading match details");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleReassign = async (matchId, providerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/queue/${matchId}/reassign`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ providerId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showAlert("Match reassigned successfully");
+        fetchMatchDetails(matchId);
+        fetchQueue();
+      } else {
+        showAlert(data.error || "Failed to reassign match");
+      }
+    } catch (e) {
+      showAlert("Network error during reassignment");
+    }
+  };
+
   useEffect(() => {
     if (user && user?.roles && user.roles.includes("admin") && user?.active_persona !== "admin") {
       console.log("🛠️ Admin Screen: Normalizing active_persona to admin");
@@ -2709,7 +2756,11 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                   const borderColor = item.status === 'completed' ? "#10B981" : (item.status === 'cancelled' ? "#EF4444" : (isAssigned ? "#F59E0B" : "#3B82F6"));
 
                   return (
-                    <View key={item?.id || Math.random()} style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: borderColor }}>
+                    <TouchableOpacity
+                      key={item?.id || Math.random()}
+                      onPress={() => fetchMatchDetails(item.id)}
+                      style={{ backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: borderColor, elevation: 1 }}
+                    >
                       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E293B" }}>{item?.service_type} Match</Text>
@@ -2720,14 +2771,14 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                       </View>
 
                       <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+                         <TouchableOpacity onPress={() => fetchMatchDetails(item.id)} style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#E2E8F0" }}>
+                           <Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>View Details</Text>
+                         </TouchableOpacity>
                          {(item.status === 'pending' || item.status === 'accepted') && (
                            <TouchableOpacity onPress={() => handleUserAction(item.id, 'review_match', { match_id: item.id, action: 'FLAGGED', internalNotes: 'Flagged from monitoring queue' })} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
                          )}
-                         {item.status === 'pending' && (
-                           <TouchableOpacity onPress={() => handleUserAction(item.id, 'queue_override', { matchId: item.id, action: 'cancel' })} style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 8, borderRadius: 6, alignItems: "center" }}><Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>Cancel Match</Text></TouchableOpacity>
-                         )}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   );
                 })
               )}
@@ -2830,6 +2881,122 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
           <View style={{ height: 60 }} />
         </View>
       </ScrollView>
+
+      {isMatchDetailModalVisible && selectedMatch && (
+        <Modal visible={isMatchDetailModalVisible} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 20 }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 24, maxHeight: "90%" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <Text style={{ fontSize: 20, fontWeight: "900", color: "#1E293B" }}>Relationship Explorer</Text>
+                <TouchableOpacity onPress={() => setIsMatchDetailModalVisible(false)}><Text style={{ fontSize: 24 }}>×</Text></TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* 1. Full Profile Linkage */}
+                <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16, marginBottom: 24 }}>
+                  <View style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 16, borderRadius: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#64748B", marginBottom: 8 }}>CUSTOMER PROFILE</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B" }}>{selectedMatch.booking.customer_name}</Text>
+                    <Text style={{ fontSize: 13, color: "#64748B", marginTop: 4 }}>{selectedMatch.booking.customer_email}</Text>
+                    <Text style={{ fontSize: 13, color: "#64748B" }}>{selectedMatch.booking.customer_phone}</Text>
+                    <TouchableOpacity style={{ marginTop: 10 }}><Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>View Full History →</Text></TouchableOpacity>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: "#F8FAFC", padding: 16, borderRadius: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#64748B", marginBottom: 8 }}>PROVIDER PROFILE</Text>
+                    {selectedMatch.booking.provider_id ? (
+                      <>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: "#1E293B" }}>{selectedMatch.booking.provider_name}</Text>
+                        <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: "600" }}>{selectedMatch.booking.provider_skill}</Text>
+                        <Text style={{ fontSize: 13, color: "#64748B", marginTop: 4 }}>{selectedMatch.booking.provider_email}</Text>
+                        <Text style={{ fontSize: 13, color: "#64748B" }}>{selectedMatch.booking.provider_phone}</Text>
+                      </>
+                    ) : (
+                      <Text style={{ fontSize: 14, fontStyle: "italic", color: "#94A3B8" }}>No provider assigned yet.</Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* 2. Job/Match Context */}
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E293B", marginBottom: 12 }}>Job & Match Context</Text>
+                  <View style={{ backgroundColor: "#F1F5F9", borderRadius: 12, padding: 16 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Text style={{ fontSize: 13, color: "#64748B" }}>Service Type:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: "700" }}>{selectedMatch.booking.service_type}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Text style={{ fontSize: 13, color: "#64748B" }}>Current State:</Text>
+                      <View style={{ backgroundColor: "#1E293B", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 10, color: "#fff", fontWeight: "800" }}>{(selectedMatch.booking.status || "").toUpperCase()}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Text style={{ fontSize: 13, color: "#64748B" }}>Created At:</Text>
+                      <Text style={{ fontSize: 13 }}>{new Date(selectedMatch.booking.created_at).toLocaleString()}</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontSize: 13, color: "#64748B" }}>Booking Price:</Text>
+                      <Text style={{ fontSize: 13, fontWeight: "800", color: COLORS.primary }}>K{selectedMatch.booking.price}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* 3. Match Criteria Scores */}
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E293B", marginBottom: 12 }}>Proximity Match Scores</Text>
+                  {selectedMatch.scores.length === 0 ? (
+                    <Text style={{ fontSize: 12, color: "#94A3B8", fontStyle: "italic" }}>No match candidates recorded.</Text>
+                  ) : (
+                    selectedMatch.scores.map(score => (
+                      <View key={score.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10, backgroundColor: "#fff", padding: 10, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: "700" }}>{score.provider_name}</Text>
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>Candidate Score: {score.score}%</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => handleReassign(selectedMatch.booking.id, score.provider_id)} style={{ backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}>
+                          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>REASSIGN</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                {/* 4. History Logs */}
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E293B", marginBottom: 12 }}>Audit History</Text>
+                  {selectedMatch.logs.length === 0 ? (
+                    <Text style={{ fontSize: 12, color: "#94A3B8", fontStyle: "italic" }}>No history logs found.</Text>
+                  ) : (
+                    selectedMatch.logs.map(log => (
+                      <View key={log.id} style={{ borderLeftWidth: 2, borderLeftColor: "#CBD5E1", paddingLeft: 12, marginBottom: 12 }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700" }}>{log.action}</Text>
+                        <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{log.internal_notes}</Text>
+                        <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 4 }}>By: {log.admin_name || "System"} • {new Date(log.created_at).toLocaleString()}</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                {/* 5. Actionable Overrides */}
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E293B", marginBottom: 12 }}>Administrative Overrides</Text>
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'FORCE_TERMINATED', internalNotes: 'Admin terminated match from relationship view' })} style={{ flex: 1, backgroundColor: "#FEF2F2", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}>
+                      <Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Break Match</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'FORCE_COMPLETED', internalNotes: 'Admin force completed match' })} style={{ flex: 1, backgroundColor: "#F0FDF4", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#BBF7D0" }}>
+                      <Text style={{ color: "#15803D", fontWeight: "700", fontSize: 12 }}>Force Complete</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'CLEARED', internalNotes: 'Admin cleared flag' })} style={{ flex: 1, backgroundColor: "#F1F5F9", padding: 12, borderRadius: 8, alignItems: "center" }}>
+                      <Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>Clear Flags</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {modalVisible && (
         <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 20 }}>

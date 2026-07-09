@@ -328,6 +328,87 @@ class AdminController {
   static async releasePayout(req, res) { return res.status(200).json({ success: true }); }
   static async refundEscrow(req, res) { return res.status(200).json({ success: true }); }
   static async getStats(req, res) { return res.status(200).json({ success: true }); }
+
+  static async getMatchDetails(req, res) {
+    try {
+      const { matchId } = req.params;
+      const bookingQuery = `
+        SELECT b.*,
+               c.name as customer_name, c.email as customer_email, c.phone_number as customer_phone,
+               p.name as provider_name, p.email as provider_email, p.phone_number as provider_phone, p.primary_skill as provider_skill
+        FROM bookings b
+        LEFT JOIN users c ON b.customer_id = c.id
+        LEFT JOIN users p ON b.provider_id = p.id
+        WHERE b.id = $1
+      `;
+      const bookingResult = await UserModel.getPool().query(bookingQuery, [matchId]);
+      if (bookingResult.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
+
+      const logsQuery = `
+        SELECT l.*, a.name as admin_name
+        FROM match_review_logs l
+        LEFT JOIN users a ON l.admin_id = a.id
+        WHERE l.match_id = $1
+        ORDER BY l.created_at DESC
+      `;
+      const logsResult = await UserModel.getPool().query(logsQuery, [matchId]);
+
+      const scoresQuery = `
+        SELECT m.*, u.name as provider_name
+        FROM matches m
+        JOIN users u ON m.provider_id = u.id
+        WHERE m.booking_id = $1
+        ORDER BY m.score DESC
+      `;
+      const scoresResult = await UserModel.getPool().query(scoresQuery, [matchId]);
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          booking: bookingResult.rows[0],
+          logs: logsResult.rows,
+          scores: scoresResult.rows
+        }
+      });
+    } catch (error) {
+      console.error('Get Match Details Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch match details' });
+    }
+  }
+
+  static async reassignMatch(req, res) {
+    try {
+      const { matchId } = req.params;
+      const { providerId } = req.body;
+      const adminId = req.user.id;
+
+      const client = await UserModel.getPool().connect();
+      try {
+        await client.query('BEGIN');
+
+        await client.query(
+          'UPDATE bookings SET provider_id = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+          [providerId, 'accepted', matchId]
+        );
+
+        await client.query(
+          'INSERT INTO match_review_logs (match_id, admin_id, action, internal_notes) VALUES ($1, $2, $3, $4)',
+          [matchId, adminId, 'CLEARED', `Manually reassigned to provider ID: ${providerId}`]
+        );
+
+        await client.query('COMMIT');
+        return res.status(200).json({ success: true, message: 'Match reassigned successfully' });
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error('Reassign Match Error:', error);
+      return res.status(500).json({ error: 'Failed to reassign match' });
+    }
+  }
 }
 
 module.exports = AdminController;
