@@ -2458,7 +2458,7 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
   );
 }
 
-function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
+function AdminScreen({ onNavigate, onLogout, user, showAlert, screenData }) {
   const { width: screenWidth } = Dimensions.get("window");
   const [stats, setStats] = useState({ totalCustomers: 0, totalProviders: 0, totalMatches: 0 });
   const [pendingProviders, setPendingProviders] = useState([]);
@@ -3698,6 +3698,14 @@ export default function App() {
   const [screenData, setScreenData] = useState(null);
 
   useEffect(() => {
+    if (screen === "admin-auth" && isAuthenticated && user?.roles?.includes('admin')) {
+      setCurrentUser('admin');
+      setScreen('admin');
+      setOnboardingComplete(true);
+    }
+  }, [screen, isAuthenticated, user]);
+
+  useEffect(() => {
     if (Platform.OS === "web") {
       // capture token from query string (PWA / Web Redirects)
       const urlParams = new URLSearchParams(window.location.search);
@@ -3802,11 +3810,6 @@ export default function App() {
 
     const renderScreen = () => {
     if (screen === "admin-auth") {
-      if (isAuthenticated && user?.roles?.includes('admin')) {
-        setCurrentUser('admin');
-        setScreen('admin');
-        setOnboardingComplete(true);
-      }
       return <AdminAuthScreen showAlert={showAlert} onAuth={(data) => { if (Platform.OS === "web") window.history.replaceState({}, "", "/"); handleAuth(data); }} />;
     }
 
