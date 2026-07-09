@@ -176,6 +176,55 @@ class ProviderController {
       return res.status(500).json({ success: false, error: 'Failed to fetch financial ledger' });
     }
   }
+
+  static async getPersonalTrustMetrics(req, res) {
+    try {
+      const provider_id = req.user.id;
+      const pool = UserModel.getPool();
+
+      const profileQuery = `
+        SELECT is_community_verified, id_verified, license_verified, background_verified
+        FROM provider_profiles
+        WHERE user_id = $1
+      `;
+      const profileResult = await pool.query(profileQuery, [provider_id]);
+      const profile = profileResult.rows[0] || {
+        is_community_verified: false,
+        id_verified: false,
+        license_verified: false,
+        background_verified: false
+      };
+
+      const statsQuery = `
+        SELECT
+          COALESCE(AVG(feedback_rating), 0) as avg_rating,
+          COUNT(*) as review_count
+        FROM bookings
+        WHERE provider_id = $1 AND status = 'completed' AND feedback_rating IS NOT NULL
+      `;
+      const statsResult = await pool.query(statsQuery, [provider_id]);
+      const stats = statsResult.rows[0];
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          verificationStatus: {
+            idVerified: profile.id_verified,
+            licenseVerified: profile.license_verified,
+            backgroundVerified: profile.background_verified,
+            communityVerified: profile.is_community_verified
+          },
+          metrics: {
+            avgRating: parseFloat(stats.avg_rating).toFixed(1),
+            totalReviews: parseInt(stats.review_count)
+          }
+        }
+      });
+    } catch (error) {
+      console.error('❌ getPersonalTrustMetrics Error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to fetch personal trust metrics' });
+    }
+  }
 }
 
 module.exports = ProviderController;
