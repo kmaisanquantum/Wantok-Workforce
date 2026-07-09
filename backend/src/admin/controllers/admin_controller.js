@@ -409,6 +409,73 @@ class AdminController {
       return res.status(500).json({ error: 'Failed to reassign match' });
     }
   }
+
+  static async getTrustMetrics(req, res) {
+    try {
+      const pool = UserModel.getPool();
+      const verifiedQuery = "SELECT COUNT(*) FROM users WHERE is_verified = true AND (role = 'provider' OR role = 'mixed')";
+      const pendingQuery = "SELECT COUNT(*) FROM users WHERE status = 'pending_verification' AND (role = 'provider' OR role = 'mixed')";
+      const reviewsQuery = "SELECT COUNT(*) FROM bookings WHERE status = 'completed' AND feedback_rating IS NOT NULL";
+      const avgScoreQuery = "SELECT AVG(feedback_rating) FROM bookings WHERE status = 'completed' AND feedback_rating IS NOT NULL";
+
+      const [verified, pending, reviews, avgScore] = await Promise.all([
+        pool.query(verifiedQuery),
+        pool.query(pendingQuery),
+        pool.query(reviewsQuery),
+        pool.query(avgScoreQuery)
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        stats: {
+          verifiedWorkers: parseInt(verified.rows[0].count),
+          pendingReview: parseInt(pending.rows[0].count),
+          totalReviews: parseInt(reviews.rows[0].count),
+          avgTrustScore: parseFloat(avgScore.rows[0].avg || 0).toFixed(1)
+        }
+      });
+    } catch (error) {
+      console.error('getTrustMetrics Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch trust metrics' });
+    }
+  }
+
+  static async getInternalSetting(key, defaultValue) {
+    try {
+      const { rows } = await UserModel.getPool().query('SELECT value FROM system_settings WHERE key = $1', [key]);
+      return rows.length > 0 ? rows[0].value : defaultValue;
+    } catch (error) {
+      return defaultValue;
+    }
+  }
+
+  static async getWorkerTrustList(req, res) {
+    try {
+      const pool = UserModel.getPool();
+      const query = `
+        SELECT u.id, u.name, u.is_verified, u.status,
+               COALESCE(AVG(b.feedback_rating), 0) as avg_rating,
+               COUNT(b.id) as review_count
+        FROM users u
+        LEFT JOIN bookings b ON u.id = b.provider_id AND b.status = 'completed' AND b.feedback_rating IS NOT NULL
+        WHERE u.role = 'provider' OR u.role = 'mixed'
+        GROUP BY u.id
+        ORDER BY avg_rating DESC, review_count DESC
+      `;
+      const { rows } = await pool.query(query);
+      return res.status(200).json({
+        success: true,
+        data: rows.map(r => ({
+          ...r,
+          avg_rating: parseFloat(r.avg_rating).toFixed(1),
+          review_count: parseInt(r.review_count)
+        }))
+      });
+    } catch (error) {
+      console.error('getWorkerTrustList Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch worker trust list' });
+    }
+  }
 }
 
 module.exports = AdminController;

@@ -744,10 +744,57 @@ function CustomerNavigationShell({ renderScreen, navigate, activeNav, onboarding
 
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
 
-function TrustScreen({ onNavigate, showAlert }) {
-  const [workers] = useState(
-    [].map((w) => ({ ...w, trustScore: Math.floor(70 + Math.random() * 30) }))
-  );
+function TrustScreen({ onNavigate, showAlert, user }) {
+  const [metrics, setMetrics] = useState(null);
+  const [workerList, setWorkerList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = user?.role === 'admin';
+  const isProvider = user?.role === 'provider' || user?.role === 'mixed';
+
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (isAdmin) {
+        const [mRes, lRes] = await Promise.all([
+          fetch(`${API_BASE}/admin/trust-metrics`, { headers: { "Authorization": `Bearer ${user?.token}` } }),
+          fetch(`${API_BASE}/admin/worker-trust-list`, { headers: { "Authorization": `Bearer ${user?.token}` } })
+        ]);
+        const mData = await mRes.json();
+        const lData = await lRes.json();
+        if (mData.success) setMetrics(mData.stats);
+        if (lData.success) setWorkerList(lData.data);
+      } else if (isProvider) {
+        const res = await fetch(`${API_BASE}/v1/providers/personal-trust-metrics`, { headers: { "Authorization": `Bearer ${user?.token}` } });
+        const data = await res.json();
+        if (data.success) {
+          setMetrics(data.data);
+        }
+      }
+    } catch (e) {
+      console.error("Fetch Trust Data Error:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const adminStats = [
+    { label: "Verified Workers", value: metrics?.verifiedWorkers || "0", icon: "✅", color: "#10B981" },
+    { label: "Pending Review", value: metrics?.pendingReview || "0", icon: "⏳", color: "#F59E0B" },
+    { label: "Total Reviews", value: metrics?.totalReviews || "0", icon: "⭐", color: "#3B82F6" },
+    { label: "Avg Trust Score", value: metrics?.avgTrustScore ? `${(metrics.avgTrustScore * 20).toFixed(0)}%` : "0%", icon: "🛡️", color: "#8B5CF6" },
+  ];
+
+  const providerVerification = [
+    { label: "ID Verification", status: metrics?.verificationStatus?.idVerified ? "Verified" : "Pending", icon: "🆔" },
+    { label: "License Checks", status: metrics?.verificationStatus?.licenseVerified ? "Verified" : "Pending", icon: "📜" },
+    { label: "Background Clearance", status: metrics?.verificationStatus?.backgroundVerified ? "Verified" : "Pending", icon: "🛡️" },
+    { label: "Community Vouch", status: metrics?.verificationStatus?.communityVerified ? "Verified" : "Pending", icon: "🤝" },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
@@ -766,118 +813,126 @@ function TrustScreen({ onNavigate, showAlert }) {
             Trust & Verification
           </Text>
           <Text style={{ color: "rgba(255,255,255,0.75)", marginTop: 4, fontSize: 13 }}>
-            Admin Dashboard · All Workers
+            {isAdmin ? "Admin Dashboard · All Workers" : "Personal Verification Scorecard"}
           </Text>
         </LinearGradient>
 
         <View style={{ padding: 16, gap: 12 }}>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
-            {[
-              { label: "Verified Workers", value: "4", icon: "✅", color: "#10B981" },
-              { label: "Pending Review", value: "2", icon: "⏳", color: "#F59E0B" },
-              { label: "Total Reviews", value: "690", icon: "⭐", color: "#3B82F6" },
-              { label: "Avg Trust Score", value: "87%", icon: "🛡️", color: "#8B5CF6" },
-            ].map((stat, i) => (
-              <View
-                key={i}
-                style={{
-                  width: (width - 32) / 2 - 10,
-                  margin: 5,
-                  backgroundColor: "#fff",
-                  borderRadius: 14,
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  elevation: 2,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.06,
-                  shadowRadius: 8,
-                }}
->
-                <Text style={{ fontSize: 24, marginBottom: 6 }}>{stat.icon}</Text>
-                <Text
-                  style={{ fontWeight: "800", fontSize: 22, color: stat.color }}
->
-                  {stat.value}
-                </Text>
-                <Text style={{ marginTop: 2, fontSize: 12, color: COLORS.textMuted }}>
-                  {stat.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <Text
-            style={{ marginTop: 8, marginBottom: 4, fontSize: 15, fontWeight: "700", color: COLORS.text }}
->
-            Worker Trust Scores
-          </Text>
-
-          {workers?.map((w) => (
-            <View
-              key={w.id}
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 14,
-                padding: 14,
-                elevation: 1,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-              }}
->
-              <LinearGradient
-                colors={
-                  w.type === "blue" ? ["#60A5FA", "#2563EB"] : ["#A78BFA", "#7C3AED"]
-                }
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
->
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 14 }}>
-                  {w.avatar}
-                </Text>
-              </LinearGradient>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontWeight: "700", fontSize: 14, color: COLORS.text }}>
-                    {w.name}
-                  </Text>
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      fontSize: 13,
-                      color: w.trustScore> 85 ? "#10B981" : "#F59E0B",
-                    }}
->
-                    {w.trustScore}%
-                  </Text>
-                </View>
-                <Text style={{ marginVertical: 2, fontSize: 12, color: COLORS.textMuted }}>
-                  {w.role}
-                </Text>
-                <View style={{ height: 6, backgroundColor: "#E5E7EB", borderRadius: 3 }}>
+          {isAdmin ? (
+            <>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
+                {adminStats.map((stat, i) => (
                   <View
+                    key={i}
                     style={{
-                      width: `${w.trustScore}%`,
-                      height: "100%",
-                      borderRadius: 3,
-                      backgroundColor: w.trustScore> 85 ? "#10B981" : "#F59E0B",
+                      width: (width - 32) / 2 - 10,
+                      margin: 5,
+                      backgroundColor: "#fff",
+                      borderRadius: 14,
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      elevation: 2,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 8,
                     }}
- />
-                </View>
+>
+                    <Text style={{ fontSize: 24, marginBottom: 6 }}>{stat.icon}</Text>
+                    <Text
+                      style={{ fontWeight: "800", fontSize: 22, color: stat.color }}
+>
+                      {stat.value}
+                    </Text>
+                    <Text style={{ marginTop: 2, fontSize: 12, color: COLORS.textMuted }}>
+                      {stat.label}
+                    </Text>
+                  </View>
+                ))}
               </View>
-              {w.verified && <Text style={{ fontSize: 18 }}>✅</Text>}
-            </View>
-          ))}
+
+              <Text style={{ marginTop: 8, marginBottom: 4, fontSize: 15, fontWeight: "700", color: COLORS.text }}>
+                Worker Trust Scores
+              </Text>
+
+              {workerList.map((w) => (
+                <TouchableOpacity
+                  key={w.id}
+                  onPress={() => onNavigate('admin', { userId: w.id })}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 14,
+                    padding: 14,
+                    elevation: 1,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 8
+                  }}
+>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontSize: 18 }}>👤</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontWeight: "700", fontSize: 14, color: COLORS.text }}>
+                        {w.name}
+                      </Text>
+                      <Text style={{ fontWeight: "700", fontSize: 13, color: parseFloat(w.avg_rating) >= 4 ? "#10B981" : "#F59E0B" }}>
+                        {parseFloat(w.avg_rating).toFixed(1)} ⭐
+                      </Text>
+                    </View>
+                    <Text style={{ marginVertical: 2, fontSize: 12, color: COLORS.textMuted }}>
+                      Status: {w.status} · {w.review_count} Reviews
+                    </Text>
+                    <View style={{ height: 6, backgroundColor: "#E5E7EB", borderRadius: 3 }}>
+                      <View
+                        style={{
+                          width: `${(parseFloat(w.avg_rating) / 5) * 100}%`,
+                          height: "100%",
+                          borderRadius: 3,
+                          backgroundColor: parseFloat(w.avg_rating) >= 4 ? "#10B981" : "#F59E0B",
+                        }}
+ />
+                    </View>
+                  </View>
+                  {w.is_verified && <Text style={{ fontSize: 18 }}>✅</Text>}
+                </TouchableOpacity>
+              ))}
+            </>
+          ) : (
+            <>
+              <View style={{ backgroundColor: "#fff", borderRadius: 14, padding: 16, elevation: 2, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8 }}>
+                 <Text style={{ fontSize: 16, fontWeight: "800", marginBottom: 12 }}>Verification Checklist</Text>
+                 {providerVerification.map((item, idx) => (
+                   <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: idx < 3 ? 1 : 0, borderBottomColor: COLORS.border }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                        <Text style={{ fontSize: 14, color: COLORS.text, fontWeight: '600' }}>{item.label}</Text>
+                      </View>
+                      <View style={{ backgroundColor: item.status === 'Verified' ? '#F0FDF4' : '#FFF7ED', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: item.status === 'Verified' ? '#15803D' : '#C2410C' }}>{item.status.toUpperCase()}</Text>
+                      </View>
+                   </View>
+                 ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                 <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: 14, padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 28, fontWeight: '800', color: COLORS.primary }}>{metrics?.metrics?.avgRating || "0.0"}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>Avg Rating</Text>
+                 </View>
+                 <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: 14, padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 28, fontWeight: '800', color: COLORS.primary }}>{metrics?.metrics?.totalReviews || "0"}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>Total Reviews</Text>
+                 </View>
+              </View>
+            </>
+          )}
           </View>
         </View>
       </ScrollView>
@@ -3631,7 +3686,7 @@ export default function App() {
       case "workerDetail": return <WorkerDetailScreen worker={screenData} onNavigate={navigate} showAlert={showAlert} />;
       case "createBooking": return <CreateBookingScreen worker={screenData} onNavigate={navigate} user={user} showAlert={showAlert} />;
       case "booking": return <BookingsScreen onNavigate={navigate} user={user} showAlert={showAlert} currentUser={currentUser} />;
-      case "trust": return <TrustScreen onNavigate={navigate} showAlert={showAlert} />;
+      case "trust": return <TrustScreen onNavigate={navigate} showAlert={showAlert} user={user} />;
       case "admin": return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} showAlert={showAlert} />;
       case "messages":
         if (currentUser === 'provider') return <ProviderInboxScreen user={user} showAlert={showAlert} />;

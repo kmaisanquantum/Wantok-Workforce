@@ -5,6 +5,7 @@ const { authMiddleware } = require('../../auth/middlewares/auth');
 
 router.post('/vouch', authMiddleware, ProviderController.submitVouch);
 router.get('/verification-status', authMiddleware, ProviderController.getVerificationStatus);
+router.get('/personal-trust-metrics', authMiddleware, ProviderController.getPersonalTrustMetrics);
 router.get('/ledger', authMiddleware, ProviderController.getLedger);
 router.get('/profile', authMiddleware, ProviderController.getProfile);
 router.put('/profile', authMiddleware, ProviderController.updateProfile);

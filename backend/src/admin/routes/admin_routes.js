@@ -15,6 +15,8 @@ router.post('/refund-escrow/:bookingId', ...adminAuth, AdminController.refundEsc
 
 // Standard Dashboard Metrics
 router.get('/dashboard-metrics', ...adminAuth, AdminController.getDashboardMetrics);
+router.get('/trust-metrics', ...adminAuth, AdminController.getTrustMetrics);
+router.get('/worker-trust-list', ...adminAuth, AdminController.getWorkerTrustList);
 router.get('/stats', ...adminAuth, AdminController.getStats);
 router.get('/system-logs', ...adminAuth, AdminController.getSystemLogs);
 
