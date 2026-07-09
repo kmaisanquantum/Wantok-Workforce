@@ -14,9 +14,9 @@ Error Message:
 Error Code: ECONNREFUSED
 🚀 Continuing server startup anyway. Database-dependent features will be unavailable until connection is restored.
 ❌ Migration error bypassed for safety:
-📡 [2026-07-08T23:26:42.132Z] GET / - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.156Z] GET /_expo/static/js/web/AppEntry-e8b6ce5ec2c6fc7464405b6ee9f5710f.js - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.303Z] GET /api/match/nearby - Origin: Same-Origin
+📡 [2026-07-09T02:28:09.074Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:28:09.161Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:28:09.585Z] GET /api/match/nearby - Origin: Same-Origin
 ℹ️ [MatchController] Missing coordinates. Falling back to global text search for: "Any"
 🔍 [MatchService] Performing global search for: "Any"
 ❌ Text Search Error:
@@ -47,39 +47,22 @@ Error Code: ECONNREFUSED
     }
   ]
 }
-📡 [2026-07-08T23:26:42.333Z] GET / - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.358Z] GET /_expo/static/js/web/AppEntry-e8b6ce5ec2c6fc7464405b6ee9f5710f.js - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.401Z] GET /api/match/nearby - Origin: Same-Origin
-ℹ️ [MatchController] Missing coordinates. Falling back to global text search for: "Any"
-🔍 [MatchService] Performing global search for: "Any"
-❌ Text Search Error:
-❌ [MatchController] Global Error: AggregateError [ECONNREFUSED]:
-    at /app/node_modules/pg-pool/index.js:45:11
-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-    at async MatchService.textSearchWorkers (/app/backend/src/match/services/match_service.js:58:24)
-    at async getNearbyWorkers (/app/backend/src/match/controllers/match_controller.js:120:25) {
-  code: 'ECONNREFUSED',
-  [errors]: [
-    Error: connect ECONNREFUSED ::1:5432
-        at createConnectionError (node:net:1678:14)
-        at afterConnectMultiple (node:net:1708:16) {
-      errno: -111,
-      code: 'ECONNREFUSED',
-      syscall: 'connect',
-      address: '::1',
-      port: 5432
-    },
-    Error: connect ECONNREFUSED 127.0.0.1:5432
-        at createConnectionError (node:net:1678:14)
-        at afterConnectMultiple (node:net:1708:16) {
-      errno: -111,
-      code: 'ECONNREFUSED',
-      syscall: 'connect',
-      address: '127.0.0.1',
-      port: 5432
-    }
-  ]
-}
-📡 [2026-07-08T23:26:42.529Z] GET /api/v1/providers/ledger - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.534Z] GET /api/v1/providers/verification-status - Origin: Same-Origin
-📡 [2026-07-08T23:26:42.540Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:28:09.729Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:29:56.440Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:29:56.458Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:29:56.628Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:31:06.195Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:31:06.209Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:31:06.381Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:31:41.371Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:31:41.383Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:31:41.561Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:32:21.550Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:32:21.562Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:32:21.687Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:32:46.527Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:32:46.539Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:32:46.721Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin
+📡 [2026-07-09T02:33:09.842Z] GET /@dm1n - Origin: Same-Origin
+📡 [2026-07-09T02:33:09.856Z] GET /_expo/static/js/web/AppEntry-2e7f8c3e29acf7d224198a7e45e4c702.js - Origin: Same-Origin
+📡 [2026-07-09T02:33:10.038Z] GET /assets/assets/brand_logo.8eba79e04acca3f4baef089c5cc45103.jpg - Origin: Same-Origin

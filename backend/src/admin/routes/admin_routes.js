@@ -36,6 +36,8 @@ router.patch('/flag-user/:userId', ...adminAuth, AdminController.flagUser);
 router.post('/users/:userId/flag', ...adminAuth, AdminController.flagUser);
 
 router.get('/queue', ...adminAuth, AdminController.getQueue);
+router.get('/queue/:matchId', ...adminAuth, AdminController.getMatchDetails);
+router.post('/queue/:matchId/reassign', ...adminAuth, AdminController.reassignMatch);
 router.post('/queue/override', ...adminAuth, AdminController.overrideQueue);
 
 // New Match Moderation Route
