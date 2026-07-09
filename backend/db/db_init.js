@@ -55,6 +55,7 @@ async function initializeDatabase(pool) {
       await runPatch("patch_booking_moderation_fields.sql", "booking moderation fields patch");
       await runPatch("patch_trust_verification_fields.sql", "trust verification fields patch");
       await runPatch("patch_reconcile_schema.sql", "reconcile schema patch");
+      await runPatch("patch_booking_status_constraint.sql", "booking status constraint patch");
 
       console.log("✅ [Ready] Database initialization complete.");
     } finally {

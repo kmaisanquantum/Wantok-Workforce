@@ -24,10 +24,11 @@ def initiate_escrow(booking_id: int, user: User = Depends(require_role("customer
     if not booking or booking.customer_id != user.id:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if booking.status != "assigned":
-        raise HTTPException(status_code=400, detail="Only assigned bookings can be paid for")
+    # MUST strictly validate: accepted/assigned -> in_progress (escrowed)
+    if booking.status not in ["accepted", "assigned"]:
+        raise HTTPException(status_code=400, detail="Only accepted or assigned bookings can be paid for")
 
-    booking.status = "accepted"
+    booking.status = "in_progress"
     booking.payout_status = "escrowed"
     session.add(booking)
     session.commit()
@@ -39,14 +40,30 @@ def release_escrow(booking_id: int, user: User = Depends(require_role("customer"
     if not booking or booking.customer_id != user.id:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if booking.status != "accepted":
-        raise HTTPException(status_code=400, detail="Only accepted bookings can be released to completed")
+    # MUST strictly validate: completed_awaiting_approval -> completed
+    if booking.status != "completed_awaiting_approval":
+        raise HTTPException(status_code=400, detail="Only bookings awaiting approval can be released to completed")
 
     booking.status = "completed"
     booking.payout_status = "disbursed"
     session.add(booking)
     session.commit()
     return {"success": True, "status": "completed"}
+
+@app.post("/provider/bookings/{booking_id}/complete")
+def mark_complete(booking_id: int, user: User = Depends(require_role("provider")), session: Session = Depends(get_session)):
+    booking = session.get(Booking, booking_id)
+    if not booking or booking.provider_id != user.id:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # MUST strictly validate: in_progress -> completed_awaiting_approval
+    if booking.status != "in_progress":
+        raise HTTPException(status_code=400, detail="Only in_progress bookings can be marked complete")
+
+    booking.status = "completed_awaiting_approval"
+    session.add(booking)
+    session.commit()
+    return {"success": True, "status": booking.status}
 
 @app.get("/customer/categories")
 def get_categories(session: Session = Depends(get_session)):
