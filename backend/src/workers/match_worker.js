@@ -8,7 +8,8 @@ const AdminController = require('../admin/controllers/admin_controller');
  * Polling loop isolated from main request threads.
  */
 class MatchWorker {
-  constructor() {
+  constructor(io = null) {
+    this.io = io;
     this.isProcessing = false;
     this.interval = null;
     this.pollingIntervalMs = 30000; // 30 seconds
@@ -134,18 +135,26 @@ class MatchWorker {
       } catch (logErr) {}
 
 
-      // 3. NOTIFICATION: Publish to Redis for real-time Socket.io broadcast
+      // 3. NOTIFICATION: Publish to Redis or fallback to direct Socket.io broadcast
+      const payload = {
+        type: 'booking_assigned',
+        bookingId: job.id,
+        customerId: job.customer_id,
+        providerId: bestCandidate.id,
+        providerName: bestCandidate.name,
+        serviceType: job.service_type,
+        status: 'accepted',
+        timestamp: new Date().toISOString()
+      };
+
       if (redisClient) {
-        const payload = {
-          type: 'booking_assigned',
-          bookingId: job.id,
-          customerId: job.customer_id,
-          providerId: bestCandidate.id,
-          providerName: bestCandidate.name,
-          serviceType: job.service_type,
-          timestamp: new Date().toISOString()
-        };
         redisClient.publish('match_assigned', JSON.stringify(payload));
+      } else if (this.io) {
+        console.log('⚠️ Redis unavailable. Using direct Socket.io fallback for MatchWorker event.');
+        this.io.to(`user_${job.customer_id}`).emit('notification', payload);
+        this.io.to(`user_${bestCandidate.id}`).emit('notification', payload);
+        this.io.to(`user_${job.customer_id}`).emit('booking_status_update', { bookingId: job.id, status: 'accepted' });
+        this.io.to(`user_${bestCandidate.id}`).emit('booking_status_update', { bookingId: job.id, status: 'accepted' });
       }
 
       console.log(`✅ [MatchWorker] Successfully automated assignment and published notification for job ${job.id}`);

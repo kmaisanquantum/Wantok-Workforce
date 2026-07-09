@@ -1,5 +1,20 @@
 const UserModel = require('../../auth/models/user_model');
 const AdminController = require('../../admin/controllers/admin_controller');
+const redisClient = require('../../../db/redis_init');
+
+// Helper for real-time status updates with Redis fallback
+const emitBookingUpdate = (req, payload) => {
+  if (redisClient) {
+    redisClient.publish('booking_updates', JSON.stringify(payload));
+  } else {
+    const io = req.app.get('io');
+    if (io) {
+      console.log('⚠️ Redis unavailable. Falling back to direct Socket.io emission.');
+      if (payload.customerId) io.to(`user_${payload.customerId}`).emit('booking_status_update', payload);
+      if (payload.providerId) io.to(`user_${payload.providerId}`).emit('booking_status_update', payload);
+    }
+  }
+};
 
 const createJob = async (req, res) => {
   let client;
@@ -115,6 +130,14 @@ const lockEscrow = async (req, res) => {
 
     await client.query('COMMIT');
     console.log(`[Escrow] Successfully locked K${price} for booking ${bookingId}`);
+
+    emitBookingUpdate(req, {
+      bookingId,
+      status: 'in_progress',
+      customerId,
+      providerId: booking.provider_id
+    });
+
     return res.status(200).json({ success: true, message: 'Escrow locked and job started' });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
@@ -136,7 +159,16 @@ const markComplete = async (req, res) => {
     const { rows } = await client.query(query, [bookingId, provider_id]);
 
     if (rows.length === 0) return res.status(404).json({ error: 'Job not found or not in progress' });
-    return res.status(200).json({ success: true, booking: rows[0] });
+
+    const booking = rows[0];
+    emitBookingUpdate(req, {
+      bookingId,
+      status: 'completed_awaiting_approval',
+      customerId: booking.customer_id,
+      providerId: booking.provider_id
+    });
+
+    return res.status(200).json({ success: true, booking });
   } catch (error) {
     console.error('Mark Complete Error:', error);
     return res.status(500).json({ error: 'Failed to mark job complete' });
@@ -187,6 +219,14 @@ const approveWork = async (req, res) => {
     await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [providerNet, provider_id]);
 
     await client.query('COMMIT');
+
+    emitBookingUpdate(req, {
+      bookingId,
+      status: 'completed',
+      customerId: customer_id,
+      providerId: provider_id
+    });
+
     return res.status(200).json({ success: true, message: 'Work approved and funds disbursed' });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
