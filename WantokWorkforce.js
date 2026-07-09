@@ -2775,7 +2775,7 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                            <Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>View Details</Text>
                          </TouchableOpacity>
                          {(item.status === 'pending' || item.status === 'accepted') && (
-                           <TouchableOpacity onPress={() => handleUserAction(item.id, 'review_match', { match_id: item.id, action: 'FLAGGED', internalNotes: 'Flagged from monitoring queue' })} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
+                           <TouchableOpacity onPress={() => handleUserAction(item.id, 'review_match', { matchId: item.id, action: 'FLAGGED', internalNotes: 'Flagged from monitoring queue' })} style={{ flex: 1, backgroundColor: "#FEF2F2", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}><Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Flag / Review</Text></TouchableOpacity>
                          )}
                       </View>
                     </TouchableOpacity>
@@ -2981,13 +2981,13 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
                 <View style={{ marginBottom: 20 }}>
                   <Text style={{ fontSize: 14, fontWeight: "800", color: "#1E293B", marginBottom: 12 }}>Administrative Overrides</Text>
                   <View style={{ flexDirection: "row", gap: 10 }}>
-                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'FORCE_TERMINATED', internalNotes: 'Admin terminated match from relationship view' })} style={{ flex: 1, backgroundColor: "#FEF2F2", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { matchId: selectedMatch.booking.id, action: 'FORCE_TERMINATED', internalNotes: 'Admin terminated match from relationship view' })} style={{ flex: 1, backgroundColor: "#FEF2F2", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#FECDD3" }}>
                       <Text style={{ color: "#B91C1C", fontWeight: "700", fontSize: 12 }}>Break Match</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'FORCE_COMPLETED', internalNotes: 'Admin force completed match' })} style={{ flex: 1, backgroundColor: "#F0FDF4", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#BBF7D0" }}>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { matchId: selectedMatch.booking.id, action: 'FORCE_COMPLETED', internalNotes: 'Admin force completed match' })} style={{ flex: 1, backgroundColor: "#F0FDF4", padding: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#BBF7D0" }}>
                       <Text style={{ color: "#15803D", fontWeight: "700", fontSize: 12 }}>Force Complete</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { match_id: selectedMatch.booking.id, action: 'CLEARED', internalNotes: 'Admin cleared flag' })} style={{ flex: 1, backgroundColor: "#F1F5F9", padding: 12, borderRadius: 8, alignItems: "center" }}>
+                    <TouchableOpacity onPress={() => handleUserAction(selectedMatch.booking.id, 'review_match', { matchId: selectedMatch.booking.id, action: 'CLEARED', internalNotes: 'Admin cleared flag' })} style={{ flex: 1, backgroundColor: "#F1F5F9", padding: 12, borderRadius: 8, alignItems: "center" }}>
                       <Text style={{ color: "#475569", fontWeight: "700", fontSize: 12 }}>Clear Flags</Text>
                     </TouchableOpacity>
                   </View>
