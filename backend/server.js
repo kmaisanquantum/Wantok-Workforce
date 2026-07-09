@@ -56,19 +56,27 @@ try {
   // Dedicated subscriber for match_assigned
   const matchSubscriber = pubClient.duplicate();
   matchSubscriber.subscribe('match_assigned');
+  matchSubscriber.subscribe('booking_updates');
+
   matchSubscriber.on('message', (channel, message) => {
-    if (channel === 'match_assigned') {
-      try {
-        const payload = JSON.parse(message);
+    try {
+      const payload = JSON.parse(message);
+
+      if (channel === 'match_assigned') {
         console.log(`📢 Match Assigned: Booking ${payload.bookingId} -> Provider ${payload.providerId}`);
-        // Broadcast to relevant users
+        // Scoped broadcast to private rooms
         io.to(`user_${payload.customerId}`).emit('notification', payload);
         io.to(`user_${payload.providerId}`).emit('notification', payload);
-        // Also broadcast the specific booking update
-        io.emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
-      } catch (e) {
-        console.error('❌ Notification Error:', e.message);
+        io.to(`user_${payload.customerId}`).emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
+        io.to(`user_${payload.providerId}`).emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
+      } else if (channel === 'booking_updates') {
+        console.log(`📢 Booking Update: ${payload.bookingId} -> ${payload.status}`);
+        // Targeted delivery
+        if (payload.customerId) io.to(`user_${payload.customerId}`).emit('booking_status_update', payload);
+        if (payload.providerId) io.to(`user_${payload.providerId}`).emit('booking_status_update', payload);
       }
+    } catch (e) {
+      console.error(`❌ Socket Sub Error (${channel}):`, e.message);
     }
   });
 
@@ -117,11 +125,17 @@ io.use(async (socket, next) => {
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id, 'User:', socket.user?.email);
 
+  // SECURE: Force authenticated user into their own private room on connect
+  if (socket.user?.id) {
+    socket.join(`user_${socket.user.id}`);
+    console.log(`👤 Socket ${socket.id} auto-joined secure room: user_${socket.user.id}`);
+  }
 
-  socket.on('join_user_room', (userId) => {
-    if (userId) {
-      socket.join(`user_${userId}`);
-      console.log(`👤 Socket ${socket.id} joined private room: user_${userId}`);
+  socket.on('join_user_room', () => {
+    // SECURITY: Ignore client-provided userId, always use verified socket.user.id
+    if (socket.user?.id) {
+      socket.join(`user_${socket.user.id}`);
+      console.log(`👤 Socket ${socket.id} joined secure room: user_${socket.user.id}`);
     }
   });
 
@@ -173,6 +187,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
+app.set('io', io); // Inject for controller-level emission fallback
 
 // Domain API Routes
 app.use('/api/auth', authRoutes);
@@ -240,7 +255,7 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
         console.log("✅ Provider profile final schema applied.");
       }
       console.log('✅ Backend is ready and database is synced.');
-      const worker = new MatchWorker();
+      const worker = new MatchWorker(io);
       worker.start();
       console.log('🤖 Background MatchWorker started.');
     } else {
