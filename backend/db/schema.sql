@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     customer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     provider_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     service_type TEXT NOT NULL,
-    status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'in_progress', 'completed_awaiting_approval', 'completed', 'cancelled'
+    status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'in_progress', 'completed_awaiting_approval', 'completed', 'cancelled', 'FLAGGED'
     payout_status TEXT DEFAULT 'pending', -- 'pending', 'escrowed', 'disbursed', 'refunded'
     price DECIMAL(10, 2),
     platform_fee DECIMAL(10, 2) DEFAULT 0.00,

@@ -326,11 +326,20 @@ class AdminController {
   static async getSystemLedgerStats(req, res) {
     try {
       const pool = UserModel.getPool();
-      const query = "SELECT key, value FROM system_settings WHERE key IN ('active_escrow_flow', 'total_disbursements')";
+      const query = "SELECT key, value FROM system_settings WHERE key IN ('active_escrow_flow', 'total_disbursements', 'platform_revenue')";
       const { rows } = await pool.query(query);
-      const stats = {};
-      rows.forEach(r => { stats[r.key] = parseFloat(r.value || 0); });
-      return res.status(200).json({ success: true, data: stats });
+
+      const statsMap = {};
+      rows.forEach(r => { statsMap[r.key] = parseFloat(r.value || 0); });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalEscrowCapital: statsMap['active_escrow_flow'] || 0,
+          totalDisbursements: statsMap['total_disbursements'] || 0,
+          totalRevenue: statsMap['platform_revenue'] || 0
+        }
+      });
     } catch (error) {
       console.error('getSystemLedgerStats Error:', error);
       return res.status(500).json({ error: 'Failed to fetch ledger stats' });
@@ -355,7 +364,7 @@ class AdminController {
       client = await UserModel.getPool().connect();
       await client.query('BEGIN');
 
-      const bookingQuery = "UPDATE bookings SET status = 'completed', payout_status = 'disbursed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND payout_status = 'escrowed' RETURNING price, provider_id";
+      const bookingQuery = "UPDATE bookings SET status = 'completed', payout_status = 'disbursed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND status = 'completed_awaiting_approval' AND payout_status = 'escrowed' RETURNING price, provider_id";
       const { rows } = await client.query(bookingQuery, [bookingId]);
 
       if (rows.length === 0) {
@@ -366,14 +375,22 @@ class AdminController {
       const { price, provider_id } = rows[0];
       const amount = parseFloat(price);
 
+      // Reconcile Platform Fee on manual release
+      const feeMetric = await AdminController.getInternalSetting('global_fee_metric_kina', 10.00);
+      const platformFee = parseFloat(feeMetric);
+      const providerNet = Math.max(0, amount - platformFee);
+
       // 1. Adjust system settings
       await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL - $1)::TEXT WHERE key = 'active_escrow_flow'", [amount]);
-      await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'total_disbursements'", [amount]);
+      await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'total_disbursements'", [providerNet]);
+      await client.query("INSERT INTO system_settings (key, value, group_category) VALUES ('platform_revenue', $1, 'financial') ON CONFLICT (key) DO UPDATE SET value = (COALESCE(system_settings.value, '0')::DECIMAL + $1)::TEXT", [platformFee]);
 
       // 2. Credit provider wallet
-      await client.query("UPDATE provider_profiles SET wallet_balance = wallet_balance + $1 WHERE user_id = $2", [amount, provider_id]);
-      // Also update user table balance for redundancy/unification
-      await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [amount, provider_id]);
+      await client.query("UPDATE provider_profiles SET wallet_balance = wallet_balance + $1 WHERE user_id = $2", [providerNet, provider_id]);
+      await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [providerNet, provider_id]);
+
+      // 3. Record the fee on the booking
+      await client.query("UPDATE bookings SET platform_fee = $1 WHERE id = $2", [platformFee, bookingId]);
 
       await client.query('COMMIT');
       return res.status(200).json({ success: true, message: 'Payout released successfully' });
@@ -393,29 +410,37 @@ class AdminController {
       client = await UserModel.getPool().connect();
       await client.query('BEGIN');
 
-      const bookingQuery = "UPDATE bookings SET status = 'cancelled', payout_status = 'refunded', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND payout_status = 'escrowed' RETURNING price, customer_id";
+      // MUST strictly validate payout_status == 'escrowed'
+      const bookingQuery = `
+        UPDATE bookings
+        SET status = 'cancelled',
+            payout_status = 'refunded',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND payout_status = 'escrowed'
+        RETURNING price, customer_id
+      `;
       const { rows } = await client.query(bookingQuery, [bookingId]);
 
       if (rows.length === 0) {
         await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Booking not found or not in escrow' });
+        return res.status(404).json({ error: 'Booking not found or funds not in escrowed state.' });
       }
 
       const { price, customer_id } = rows[0];
       const amount = parseFloat(price);
 
-      // 1. Adjust system settings
+      // 1. Adjust global system ledger
       await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL - $1)::TEXT WHERE key = 'active_escrow_flow'", [amount]);
 
-      // 2. Credit customer wallet
+      // 2. Safely refund the customer's unified wallet
       await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [amount, customer_id]);
 
       await client.query('COMMIT');
-      return res.status(200).json({ success: true, message: 'Escrow refunded successfully' });
+      return res.status(200).json({ success: true, message: 'Escrowed funds successfully refunded to customer wallet.' });
     } catch (error) {
       if (client) await client.query('ROLLBACK');
       console.error('refundEscrow Error:', error);
-      return res.status(500).json({ error: 'Failed to refund escrow' });
+      return res.status(500).json({ error: 'Transactional refund failed.' });
     } finally {
       if (client) client.release();
     }

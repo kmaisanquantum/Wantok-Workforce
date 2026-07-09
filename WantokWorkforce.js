@@ -2380,6 +2380,13 @@ function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  useEffect(() => {
+    if (screenData?.userId) {
+      setEditingUser({ id: screenData.userId });
+      setModalVisible(true);
+    }
+  }, [screenData]);
+
   const [logs, setLogs] = useState([]);
   const [queue, setQueue] = useState([]);
   const [systemSettings, setSystemSettings] = useState({ match_radius: 50, platform_fee: 10, maintenance_mode: false });
@@ -3687,7 +3694,7 @@ export default function App() {
       case "createBooking": return <CreateBookingScreen worker={screenData} onNavigate={navigate} user={user} showAlert={showAlert} />;
       case "booking": return <BookingsScreen onNavigate={navigate} user={user} showAlert={showAlert} currentUser={currentUser} />;
       case "trust": return <TrustScreen onNavigate={navigate} showAlert={showAlert} user={user} />;
-      case "admin": return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} showAlert={showAlert} />;
+      case "admin": return <AdminScreen onNavigate={navigate} onLogout={handleLogout} user={user} showAlert={showAlert} screenData={screenData} />;
       case "messages":
         if (currentUser === 'provider') return <ProviderInboxScreen user={user} showAlert={showAlert} />;
         return <CustomerInboxScreen user={user} showAlert={showAlert} />;

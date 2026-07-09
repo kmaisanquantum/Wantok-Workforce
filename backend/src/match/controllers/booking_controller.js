@@ -1,4 +1,5 @@
 const UserModel = require('../../auth/models/user_model');
+const AdminController = require('../../admin/controllers/admin_controller');
 
 const createJob = async (req, res) => {
   let client;
@@ -164,14 +165,26 @@ const approveWork = async (req, res) => {
     const { price, provider_id } = rows[0];
     const amount = parseFloat(price);
 
+    // Calculate Platform Fee
+    const feeMetric = await AdminController.getInternalSetting('global_fee_metric_kina', 10.00);
+    const platformFee = parseFloat(feeMetric);
+    const providerNet = Math.max(0, amount - platformFee);
+
     // 1. Subtract from global active_escrow_flow
     await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL - $1)::TEXT WHERE key = 'active_escrow_flow'", [amount]);
 
-    // 2. Add to global total_disbursements
-    await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'total_disbursements'", [amount]);
+    // 2. Add to global total_disbursements (net to provider)
+    await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'total_disbursements'", [providerNet]);
 
-    // 3. Credit provider wallet
-    await client.query("UPDATE provider_profiles SET wallet_balance = wallet_balance + $1 WHERE user_id = $2", [amount, provider_id]);
+    // 3. Add to platform_revenue
+    await client.query("INSERT INTO system_settings (key, value, group_category) VALUES ('platform_revenue', $1, 'financial') ON CONFLICT (key) DO UPDATE SET value = (COALESCE(system_settings.value, '0')::DECIMAL + $1)::TEXT", [platformFee]);
+
+    // 4. Update booking with the fee recorded
+    await client.query("UPDATE bookings SET platform_fee = $1 WHERE id = $2", [platformFee, bookingId]);
+
+    // 5. Credit provider wallet (net amount)
+    await client.query("UPDATE provider_profiles SET wallet_balance = wallet_balance + $1 WHERE user_id = $2", [providerNet, provider_id]);
+    await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [providerNet, provider_id]);
 
     await client.query('COMMIT');
     return res.status(200).json({ success: true, message: 'Work approved and funds disbursed' });
