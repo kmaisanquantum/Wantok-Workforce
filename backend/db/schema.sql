@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
     bio TEXT,
     hourly_rate DECIMAL(10, 2),
     is_verified BOOLEAN DEFAULT FALSE,
+    wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -78,8 +79,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     customer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     provider_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     service_type TEXT NOT NULL,
-    status TEXT DEFAULT 'pending', -- 'pending', 'confirmed', 'completed', 'cancelled'
+    status TEXT DEFAULT 'pending', -- 'pending', 'accepted', 'in_progress', 'completed_awaiting_approval', 'completed', 'cancelled'
+    payout_status TEXT DEFAULT 'pending', -- 'pending', 'escrowed', 'disbursed', 'refunded'
     price DECIMAL(10, 2),
+    platform_fee DECIMAL(10, 2) DEFAULT 0.00,
+    feedback_rating INTEGER,
+    feedback_text TEXT,
+    completed_at TIMESTAMP WITH TIME ZONE,
     scheduled_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

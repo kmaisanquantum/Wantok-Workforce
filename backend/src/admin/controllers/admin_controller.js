@@ -323,10 +323,103 @@ class AdminController {
     }
   }
 
-  static async getSystemLedgerStats(req, res) { return res.status(200).json({ success: true, data: {} }); }
-  static async getDisputedJobs(req, res) { return res.status(200).json({ success: true, data: [] }); }
-  static async releasePayout(req, res) { return res.status(200).json({ success: true }); }
-  static async refundEscrow(req, res) { return res.status(200).json({ success: true }); }
+  static async getSystemLedgerStats(req, res) {
+    try {
+      const pool = UserModel.getPool();
+      const query = "SELECT key, value FROM system_settings WHERE key IN ('active_escrow_flow', 'total_disbursements')";
+      const { rows } = await pool.query(query);
+      const stats = {};
+      rows.forEach(r => { stats[r.key] = parseFloat(r.value || 0); });
+      return res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      console.error('getSystemLedgerStats Error:', error);
+      return res.status(500).json({ error: 'Failed to fetch ledger stats' });
+    }
+  }
+
+  static async getDisputedJobs(req, res) {
+    try {
+      const pool = UserModel.getPool();
+      const query = "SELECT b.*, c.name as customer_name, p.name as provider_name FROM bookings b LEFT JOIN users c ON b.customer_id = c.id LEFT JOIN users p ON b.provider_id = p.id WHERE b.status = 'disputed' ORDER BY b.updated_at DESC";
+      const { rows } = await pool.query(query);
+      return res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to fetch disputed jobs' });
+    }
+  }
+
+  static async releasePayout(req, res) {
+    let client;
+    try {
+      const { bookingId } = req.params;
+      client = await UserModel.getPool().connect();
+      await client.query('BEGIN');
+
+      const bookingQuery = "UPDATE bookings SET status = 'completed', payout_status = 'disbursed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND payout_status = 'escrowed' RETURNING price, provider_id";
+      const { rows } = await client.query(bookingQuery, [bookingId]);
+
+      if (rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Booking not found or not in escrow' });
+      }
+
+      const { price, provider_id } = rows[0];
+      const amount = parseFloat(price);
+
+      // 1. Adjust system settings
+      await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL - $1)::TEXT WHERE key = 'active_escrow_flow'", [amount]);
+      await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL + $1)::TEXT WHERE key = 'total_disbursements'", [amount]);
+
+      // 2. Credit provider wallet
+      await client.query("UPDATE provider_profiles SET wallet_balance = wallet_balance + $1 WHERE user_id = $2", [amount, provider_id]);
+      // Also update user table balance for redundancy/unification
+      await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [amount, provider_id]);
+
+      await client.query('COMMIT');
+      return res.status(200).json({ success: true, message: 'Payout released successfully' });
+    } catch (error) {
+      if (client) await client.query('ROLLBACK');
+      console.error('releasePayout Error:', error);
+      return res.status(500).json({ error: 'Failed to release payout' });
+    } finally {
+      if (client) client.release();
+    }
+  }
+
+  static async refundEscrow(req, res) {
+    let client;
+    try {
+      const { bookingId } = req.params;
+      client = await UserModel.getPool().connect();
+      await client.query('BEGIN');
+
+      const bookingQuery = "UPDATE bookings SET status = 'cancelled', payout_status = 'refunded', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND payout_status = 'escrowed' RETURNING price, customer_id";
+      const { rows } = await client.query(bookingQuery, [bookingId]);
+
+      if (rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Booking not found or not in escrow' });
+      }
+
+      const { price, customer_id } = rows[0];
+      const amount = parseFloat(price);
+
+      // 1. Adjust system settings
+      await client.query("UPDATE system_settings SET value = (COALESCE(value, '0')::DECIMAL - $1)::TEXT WHERE key = 'active_escrow_flow'", [amount]);
+
+      // 2. Credit customer wallet
+      await client.query("UPDATE users SET wallet_balance = wallet_balance + $1 WHERE id = $2", [amount, customer_id]);
+
+      await client.query('COMMIT');
+      return res.status(200).json({ success: true, message: 'Escrow refunded successfully' });
+    } catch (error) {
+      if (client) await client.query('ROLLBACK');
+      console.error('refundEscrow Error:', error);
+      return res.status(500).json({ error: 'Failed to refund escrow' });
+    } finally {
+      if (client) client.release();
+    }
+  }
   static async getStats(req, res) { return res.status(200).json({ success: true }); }
 
   static async getMatchDetails(req, res) {
