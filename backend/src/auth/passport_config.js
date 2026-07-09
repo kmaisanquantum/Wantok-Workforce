@@ -29,10 +29,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   }, async (req, accessToken, refreshToken, profile, done) => {
     try {
       const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+      const email = profile.emails?.[0]?.value;
       const user = await UserModel.findOrCreateOAuthUser({
         provider: 'google',
         providerUserId: profile.id,
-        email: profile.emails[0].value,
+        email: email,
         name: profile.displayName,
         role: state.role || 'customer',
         avatarUrl: profile.photos && profile.photos[0] ? profile.photos[0].value : null
@@ -55,10 +56,11 @@ if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
   }, async (req, accessToken, refreshToken, profile, done) => {
     try {
       const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+      const email = profile.emails?.[0]?.value;
       const user = await UserModel.findOrCreateOAuthUser({
         provider: 'microsoft',
         providerUserId: profile.id,
-        email: profile.emails[0].value,
+        email: email,
         name: profile.displayName,
         role: state.role || 'customer',
         avatarUrl: null // Microsoft profile photo requires separate graph call
@@ -84,10 +86,11 @@ if (process.env.OIDC_ISSUER && process.env.OIDC_CLIENT_ID && process.env.OIDC_CL
   }, async (req, issuer, profile, done) => {
     try {
       const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+      const email = profile.emails?.[0]?.value;
       const user = await UserModel.findOrCreateOAuthUser({
         provider: 'oidc',
         providerUserId: profile.id,
-        email: profile.emails[0].value,
+        email: email,
         name: profile.displayName,
         role: state.role || 'customer',
         avatarUrl: null
