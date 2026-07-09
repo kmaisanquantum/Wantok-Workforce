@@ -17,7 +17,7 @@ const { Server } = require('socket.io');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
+const RedisStore = require('connect-redis')(session);
 const passport = require('passport');
 
 const authRoutes = require('./src/auth/routes/auth_routes');
