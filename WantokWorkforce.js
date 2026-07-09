@@ -14,7 +14,12 @@ import {
   RefreshControl, Modal, Linking, Switch,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from 'expo-web-browser';
+import * as LinkingExpo from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import categories from "./categories.json";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const { width, height: screenHeight } = Dimensions.get("window");
 const isDesktop = width > 1024;
@@ -1381,6 +1386,42 @@ function ProviderProfileForm({ user, showAlert }) {
 
 function AuthScreen({ onAuth, showAlert }) {
   const [loading, setLoading] = useState(false);
+
+  const handleOAuth = async (provider) => {
+    const role = mode === 'signup' ? (signUpStep === 1 ? 'customer' : 'customer') : 'customer';
+    // In a more complex flow, we'd know if they are signing up as a provider.
+    // Given the current UI, if they are in 'signup' mode, we might want to capture intent.
+    // However, the directive said OAuth serves both.
+
+    // Let's refine the role detection based on a hypothetical 'isProvider' state if we had one.
+    // Since we don't, and the existing signup doesn't ask for role until after registration,
+    // we'll use 'customer' as default and let them select later if needed,
+    // OR we can check if they are in a specific view.
+
+    if (Platform.OS === 'web') {
+      const authUrl = `${API_BASE}/auth/${provider}?role=${role}&platform=web`;
+      window.location.href = authUrl;
+    } else {
+      try {
+        const redirectUri = LinkingExpo.createURL('auth-callback');
+        const authUrl = `${API_BASE}/auth/${provider}?role=${role}&platform=native&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+        if (result.type === 'success' && result.url) {
+          const { queryParams } = LinkingExpo.parse(result.url);
+          if (queryParams && queryParams.token) {
+            // Mocking the fetch of user profile after token is received
+            // In a real app, you might want a specific endpoint to get user from token
+            onAuth({ token: queryParams.token }, false);
+          }
+        }
+      } catch (error) {
+        showAlert("OAuth Error: " + error.message);
+      }
+    }
+  };
+
   const [dbStatus, setDbStatus] = useState("checking");
 
   useEffect(() => {
@@ -1606,6 +1647,24 @@ function AuthScreen({ onAuth, showAlert }) {
               >
                 <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>{loading ? "Signing In..." : "Sign In"}</Text>
               </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+                <Text style={{ marginHorizontal: 10, color: COLORS.textLight, fontSize: 12 }}>OR CONTINUE WITH</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+              </View>
+
+              <View style={{ gap: 10, marginBottom: 16 }}>
+                <TouchableOpacity onPress={() => handleOAuth('google')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Google</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleOAuth('microsoft')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Outlook</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleOAuth('oidc')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Another Account</Text>
+                </TouchableOpacity>
+              </View>
             </>
           ) : (
             <>
@@ -1716,6 +1775,24 @@ function AuthScreen({ onAuth, showAlert }) {
                   {loading ? "Creating Account..." : (signUpStep === 1 ? "Next Step" : "Create Account")}
                 </Text>
               </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+                <Text style={{ marginHorizontal: 10, color: COLORS.textLight, fontSize: 12 }}>OR CONTINUE WITH</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+              </View>
+
+              <View style={{ gap: 10, marginBottom: 16 }}>
+                <TouchableOpacity onPress={() => handleOAuth('google')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Google</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleOAuth('microsoft')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Outlook</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleOAuth('oidc')} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingVertical: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700' }}>Another Account</Text>
+                </TouchableOpacity>
+              </View>
               {signUpStep === 2 && (
                 <TouchableOpacity onPress={() => setSignUpStep(1)} style={{ alignItems: "center", marginBottom: 16 }}>
                   <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>Back to Basic Info</Text>
@@ -3598,6 +3675,15 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS === "web") {
+      // capture token from query string (PWA / Web Redirects)
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const onboarding = urlParams.get('onboarding');
+      if (token) {
+        handleAuth({ token, onboarding: onboarding === '1' }, false);
+        window.history.replaceState({}, "", "/");
+      }
+
       const path = window.location.pathname;
       if (path === "/@dm1n") {
         setScreen("admin-auth");
@@ -3610,6 +3696,18 @@ export default function App() {
           handleAuth(parsed, false);
         }
       } catch (e) {}
+    } else {
+      // Native Session Restore
+      const restoreNativeSession = async () => {
+        try {
+          const savedUser = await AsyncStorage.getItem("wantok_user");
+          if (savedUser) {
+            const parsed = JSON.parse(savedUser);
+            handleAuth(parsed, false);
+          }
+        } catch (e) {}
+      };
+      restoreNativeSession();
     }
   }, []);
 
@@ -3618,23 +3716,46 @@ export default function App() {
     setScreenData(data);
   };
 
-  const handleAuth = (userData, isSignUp = false) => {
-    setUser(userData);
+  const handleAuth = async (userData, isSignUp = false) => {
+    // If only token is provided (OAuth), fetch full profile
+    let fullUser = userData;
+    if (userData.token && !userData.email) {
+      try {
+        const response = await fetch(`${API_BASE}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${userData.token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          fullUser = { ...data.user, token: userData.token, onboarding: userData.onboarding };
+        }
+      } catch (e) {
+        console.error("Failed to fetch user profile", e);
+      }
+    }
+
+    setUser(fullUser);
     if (Platform.OS === 'web') {
-      localStorage.setItem('wantok_user', JSON.stringify(userData));
+      localStorage.setItem('wantok_user', JSON.stringify(fullUser));
+    } else {
+      await AsyncStorage.setItem('wantok_user', JSON.stringify(fullUser));
     }
     setIsAuthenticated(true);
-    if (isSignUp) {
-      setCurrentUser(null);
-      setOnboardingComplete(false);
+    if (isSignUp || fullUser.onboarding) {
+      if (fullUser.onboarding) {
+        setCurrentUser(fullUser.role);
+        setOnboardingComplete(false);
+      } else {
+        setCurrentUser(null);
+        setOnboardingComplete(false);
+      }
     } else {
       // Handle login with existing persona
-      const persona = userData.active_persona || (userData.roles && userData.roles[0]) || 'customer';
+      const persona = fullUser.active_persona || (fullUser.roles && fullUser.roles[0]) || 'customer';
       setCurrentUser(persona);
       if (persona === "admin") setScreen("admin");
 
       // If provider, check if they have completed profile (role/location)
-      if (persona === 'provider' && (!userData.primary_skill || !userData.location_name)) {
+      if (persona === 'provider' && (!fullUser.primary_skill || !fullUser.location_name)) {
         setOnboardingComplete(false);
       } else {
         setOnboardingComplete(true);
@@ -3642,9 +3763,11 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (Platform.OS === 'web') {
       localStorage.removeItem('wantok_user');
+    } else {
+      await AsyncStorage.removeItem('wantok_user');
     }
     setIsAuthenticated(false);
     setUser(null);
