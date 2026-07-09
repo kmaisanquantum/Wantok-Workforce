@@ -86,9 +86,9 @@ const lockEscrow = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized: You are not the customer for this booking' });
     }
 
-    // Support both 'accepted' (manual/automated) and 'assigned' (automated) statuses
-    if (booking.status !== 'accepted' && booking.status !== 'assigned') {
-      console.warn(`[Escrow] Booking ${bookingId} has invalid status for escrow: ${booking.status}`);
+    // MUST strictly validate: 'accepted' -> 'in_progress'
+    if (booking.status !== 'accepted') {
+      console.warn(`[Escrow] Booking ${bookingId} has invalid status for escrow: ${booking.status}. Expected: accepted`);
       return res.status(400).json({ error: `Job not ready for escrow. Current status: ${booking.status}` });
     }
 
@@ -99,7 +99,7 @@ const lockEscrow = async (req, res) => {
 
     await client.query('BEGIN');
 
-    const bookingQuery = "UPDATE bookings SET status = 'in_progress', payout_status = 'escrowed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND (status = 'accepted' OR status = 'assigned') RETURNING price";
+    const bookingQuery = "UPDATE bookings SET status = 'in_progress', payout_status = 'escrowed', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND status = 'accepted' RETURNING price";
     const { rows } = await client.query(bookingQuery, [bookingId]);
 
     if (rows.length === 0) {
