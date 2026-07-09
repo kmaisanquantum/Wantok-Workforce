@@ -16,6 +16,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const jwt = require('jsonwebtoken');
+const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const passport = require('passport');
 
 const authRoutes = require('./src/auth/routes/auth_routes');
 const customerRoutes = require('./src/customers/routes/customer_routes');
@@ -158,13 +161,21 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   origin: function (origin, callback) {
+    const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : [];
+    const oauthCallbackBase = process.env.OAUTH_CALLBACK_BASE_URL;
+
     const allowedOrigins = [
         "http://wantok.dspng.tech",
         "https://wantok.dspng.tech",
         "http://localhost:3000",
         "http://localhost:19006",
-        "http://localhost:8081"
+        "http://localhost:8081",
+        ...envOrigins
     ];
+
+    if (oauthCallbackBase) {
+      allowedOrigins.push(oauthCallbackBase);
+    }
 
     const isAllowed = !origin ||
                      allowedOrigins.indexOf(origin) !== -1 ||
@@ -187,6 +198,32 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
+
+// Session and Passport Middleware
+const SESSION_SECRET = process.env.SESSION_SECRET || 'wantok-session-secret-2024';
+const sessionConfig = {
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+};
+
+if (redisClient) {
+  sessionConfig.store = new RedisStore({ client: redisClient });
+} else {
+  console.warn('⚠️ No Redis client available for session store. Using memory store.');
+}
+
+app.use(session(sessionConfig));
+app.use(passport.initialize());
+app.use(passport.session());
+require('./src/auth/passport_config');
+
 app.set('io', io); // Inject for controller-level emission fallback
 
 // Domain API Routes
@@ -219,6 +256,23 @@ app.get('/api/health/db', async (req, res) => {
 // Serve Static Frontend Assets (Production)
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
+
+// PWA Support endpoints
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, '../manifest.json'));
+});
+
+app.get('/service-worker.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../service-worker.js'));
+});
+
+app.get('/icon-192.jpg', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icon-192.jpg'));
+});
+
+app.get('/icon-512.jpg', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icon-512.jpg'));
+});
 
 app.get('/@dm1n', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));

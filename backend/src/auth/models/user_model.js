@@ -138,6 +138,91 @@ class UserModel {
     const { rows } = await pool.query(query, [primary_skill, location_name, userId]);
     return rows[0];
   }
+
+  static async findOrCreateOAuthUser({ provider, providerUserId, email, name, role, avatarUrl }) {
+    let client;
+    try {
+      client = await pool.connect();
+      await client.query('BEGIN');
+
+      // 1. Look up by provider identity
+      const identityQuery = `
+        SELECT u.*,
+               ARRAY(
+                 SELECT DISTINCT role_name FROM (
+                   SELECT role::TEXT as role_name FROM users WHERE id = u.id
+                   UNION
+                   SELECT role_name::TEXT FROM user_roles WHERE user_id = u.id
+                 ) sub
+                 WHERE role_name IS NOT NULL AND role_name::TEXT NOT IN ('null', 'undefined', '')
+               ) as roles
+        FROM users u
+        WHERE u.auth_provider = $1 AND u.provider_user_id = $2
+      `;
+      const { rows: identityRows } = await client.query(identityQuery, [provider, providerUserId]);
+
+      if (identityRows.length > 0) {
+        await client.query('COMMIT');
+        return identityRows[0];
+      }
+
+      // 2. Check if a matching profile exists by email
+      const emailQuery = `
+        SELECT u.*,
+               ARRAY(
+                 SELECT DISTINCT role_name FROM (
+                   SELECT role::TEXT as role_name FROM users WHERE id = u.id
+                   UNION
+                   SELECT role_name::TEXT FROM user_roles WHERE user_id = u.id
+                 ) sub
+                 WHERE role_name IS NOT NULL AND role_name::TEXT NOT IN ('null', 'undefined', '')
+               ) as roles
+        FROM users u
+        WHERE u.email = $1
+      `;
+      const { rows: emailRows } = await client.query(emailQuery, [email.toLowerCase().trim()]);
+
+      if (emailRows.length > 0) {
+        const existingUser = emailRows[0];
+        // Map OAuth attributes to existing user
+        const updateQuery = `
+          UPDATE users
+          SET auth_provider = $1, provider_user_id = $2, avatar_url = COALESCE(avatar_url, $3)
+          WHERE id = $4
+          RETURNING *
+        `;
+        const { rows: updatedRows } = await client.query(updateQuery, [provider, providerUserId, avatarUrl, existingUser.id]);
+        await client.query('COMMIT');
+        return { ...updatedRows[0], roles: existingUser.roles };
+      }
+
+      // 3. Create a brand-new user
+      const insertQuery = `
+        INSERT INTO users (name, email, auth_provider, provider_user_id, avatar_url, role, active_persona)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id, name, email, role, active_persona, is_available, avatar_url
+      `;
+      const { rows: newRows } = await client.query(insertQuery, [
+        name,
+        email.toLowerCase().trim(),
+        provider,
+        providerUserId,
+        avatarUrl,
+        role,
+        role
+      ]);
+      const newUser = newRows[0];
+      await client.query('INSERT INTO user_roles (user_id, role_name) VALUES ($1, $2)', [newUser.id, role]);
+      await client.query('COMMIT');
+      return { ...newUser, roles: [role], isNew: true };
+
+    } catch (e) {
+      if (client) await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      if (client) client.release();
+    }
+  }
 }
 
 module.exports = UserModel;
