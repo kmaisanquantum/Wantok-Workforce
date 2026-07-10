@@ -205,6 +205,21 @@ class ProviderController {
       const statsResult = await pool.query(statsQuery, [provider_id]);
       const stats = statsResult.rows[0];
 
+      const totalReviews = parseInt(stats.review_count);
+      const avgRating = parseFloat(stats.avg_rating);
+      const communityVerified = !!profile.is_community_verified;
+      const idVerified = !!profile.id_verified;
+      const licenseVerified = !!profile.license_verified;
+      const backgroundVerified = !!profile.background_verified;
+
+      let trustScore;
+      if (totalReviews === 0) {
+        trustScore = (communityVerified ? 15 : 0) + (idVerified ? 5 : 0) + (licenseVerified ? 5 : 0) + (backgroundVerified ? 5 : 0);
+      } else {
+        trustScore = Math.round(((avgRating / 5) * 70) + (communityVerified ? 15 : 0) + (idVerified ? 5 : 0) + (licenseVerified ? 5 : 0) + (backgroundVerified ? 5 : 0));
+      }
+      trustScore = Math.min(100, Math.max(0, trustScore));
+
       return res.status(200).json({
         success: true,
         data: {
@@ -216,7 +231,8 @@ class ProviderController {
           },
           metrics: {
             avgRating: parseFloat(stats.avg_rating).toFixed(1),
-            totalReviews: parseInt(stats.review_count)
+            totalReviews: parseInt(stats.review_count),
+            trustScore: trustScore
           }
         }
       });

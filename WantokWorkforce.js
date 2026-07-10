@@ -256,6 +256,7 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
 
   // Provider specific states
   const [vStatus, setVStatus] = useState({ verified: false, vouch_status: 'none' });
+  const [trustMetrics, setTrustMetrics] = useState(null);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [profileForm, setProfileForm] = useState({
     primary_skill: user?.primary_skill || '',
@@ -411,11 +412,18 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
   const fetchVerification = async () => {
     if (currentUser !== 'provider') return;
     try {
-      const res = await fetch(`${API_BASE}/v1/providers/verification-status`, {
-        headers: { 'Authorization': `Bearer ${user?.token}` }
-      });
+      const [res, tRes] = await Promise.all([
+        fetch(`${API_BASE}/v1/providers/verification-status`, {
+          headers: { 'Authorization': `Bearer ${user?.token}` }
+        }),
+        fetch(`${API_BASE}/v1/providers/personal-trust-metrics`, {
+          headers: { 'Authorization': `Bearer ${user?.token}` }
+        })
+      ]);
       const data = await res.json().catch(() => ({}));
+      const tData = await tRes.json().catch(() => ({}));
       if (data.success) setVStatus(data);
+      if (tData.success) setTrustMetrics(tData.data);
     } catch (err) {}
   };
 
@@ -486,11 +494,20 @@ function HomeScreen({ onNavigate, currentUser, user, onUpdateUser, showAlert }) 
                     </TouchableOpacity>
                   </View>
                   <View style={{ height: 1, backgroundColor: COLORS.border, marginBottom: SPACING.md }} />
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACING.sm }}>
-                    <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, fontFamily: "Inter_600SemiBold", color: COLORS.text }}>Trust Score</Text>
-                    <Text style={{ fontSize: TYPOGRAPHY.body.fontSize, fontFamily: "Poppins_700Bold", color: COLORS.primary }}>{vStatus?.verified ? "98%" : "92%"}</Text>
-                  </View>
-                  <View style={{ height: 6, backgroundColor: COLORS.border, borderRadius: RADII.sm / 2, overflow: "hidden" }}><View style={{ width: vStatus?.verified ? "98%" : "92%", height: "100%", backgroundColor: COLORS.primary }} /></View>
+                  {(() => {
+                    const trustScore = trustMetrics?.metrics?.trustScore !== undefined ? trustMetrics.metrics.trustScore : (vStatus?.verified ? 98 : 92);
+                    return (
+                      <>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACING.sm }}>
+                          <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, fontFamily: "Inter_600SemiBold", color: COLORS.text }}>Trust Score</Text>
+                          <Text style={{ fontSize: TYPOGRAPHY.body.fontSize, fontFamily: "Poppins_700Bold", color: COLORS.primary }}>{`${trustScore}%`}</Text>
+                        </View>
+                        <View style={{ height: 6, backgroundColor: COLORS.border, borderRadius: RADII.sm / 2, overflow: "hidden" }}>
+                          <View style={{ width: `${trustScore}%`, height: "100%", backgroundColor: COLORS.primary }} />
+                        </View>
+                      </>
+                    );
+                  })()}
                 </View>
 
                 <ProviderFinancialDashboard user={user} showAlert={showAlert} />

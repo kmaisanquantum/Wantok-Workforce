@@ -198,8 +198,9 @@ const approveWork = async (req, res) => {
     const amount = parseFloat(price);
 
     // Calculate Platform Fee
-    const feeMetric = await AdminController.getInternalSetting('global_fee_metric_kina', 10.00);
-    const platformFee = parseFloat(feeMetric);
+    const settingValue = await AdminController.getInternalSetting('global_fee_percent', 10);
+    const feePercent = parseFloat(settingValue);
+    const platformFee = Math.round(amount * (feePercent / 100) * 100) / 100;
     const providerNet = Math.max(0, amount - platformFee);
 
     // 1. Subtract from global active_escrow_flow

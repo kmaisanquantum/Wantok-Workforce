@@ -23,6 +23,10 @@ Required environment variables:
 - `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET`: Microsoft OAuth credentials.
 - `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET`: Generic OIDC credentials.
 
+### Administrative Settings (Database-driven)
+The platform uses the `system_settings` database table to manage dynamic administrative configurations:
+- `global_fee_percent`: Dynamic percentage-based platform fee (default: `10` for 10%). Deducted cleanly in two-decimal precision during worker payment releases/payouts.
+
 ### Coolify / Vultr Deployment Details
 - **Internal Network**: Coolify's container network handles internal traffic. SSL is terminated at the Traefik proxy level.
 - **Environment Configuration**: All production keys must be set in the Coolify environment dashboard. See `.env.example` for the complete list of required keys.
