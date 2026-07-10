@@ -2,6 +2,10 @@ const redisClient = require('../../db/redis_init');
 const UserModel = require('../auth/models/user_model');
 const AdminController = require('../admin/controllers/admin_controller');
 
+const WEIGHT_PROXIMITY = 0.5;
+const WEIGHT_RATING = 0.4;
+const BONUS_COMMUNITY = 10;
+
 /**
  * MatchWorker
  * Background engine for autonomous user matching.
@@ -81,9 +85,21 @@ class MatchWorker {
       // PostGIS query to find available providers with matching skill
       const candidateQuery = `
         SELECT u.id, u.name,
-               CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km
+               CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km,
+               COALESCE(b_avg.avg_rating, 0) AS avg_rating,
+               COALESCE(b_avg.review_count, 0) AS review_count,
+               COALESCE(pp.is_community_verified, FALSE) AS is_community_verified
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN provider_profiles pp ON u.id = pp.user_id
+        LEFT JOIN (
+          SELECT provider_id,
+                 COALESCE(AVG(feedback_rating), 0) AS avg_rating,
+                 COUNT(id) AS review_count
+          FROM bookings
+          WHERE status = 'completed' AND feedback_rating IS NOT NULL
+          GROUP BY provider_id
+        ) b_avg ON u.id = b_avg.provider_id
         WHERE ur.role_name = 'provider'
           AND u.is_available = TRUE
           AND u.is_flagged = FALSE
@@ -102,17 +118,33 @@ class MatchWorker {
 
       console.log(`🤖 [MatchWorker] Found ${candidates.length} candidate(s) for job ${job.id}`);
 
-      // 1. Propose all matches for scoring/record
-      for (const candidate of candidates) {
-        const score = Math.max(0, 100 - (candidate.distance_km || 0));
+      // Compute composite scores for all candidates
+      const candidatesWithScores = candidates.map(candidate => {
+        const distance_km = parseFloat(candidate.distance_km) || 0;
+        const avg_rating = parseFloat(candidate.avg_rating) || 0;
+        const is_community_verified = !!candidate.is_community_verified;
+
+        const proximityScore = Math.max(0, 100 - distance_km);
+        const ratingScore = (avg_rating / 5) * 100;
+        const score = Math.min(100, Math.max(0, Math.round((WEIGHT_PROXIMITY * proximityScore) + (WEIGHT_RATING * ratingScore) + (is_community_verified ? BONUS_COMMUNITY : 0))));
+
+        return {
+          ...candidate,
+          score
+        };
+      });
+
+      // 1. Propose all matches for scoring/record with composite score
+      for (const candidate of candidatesWithScores) {
         await pool.query(
           'INSERT INTO matches (booking_id, provider_id, score, status) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
-          [job.id, candidate.id, score, 'proposed']
+          [job.id, candidate.id, candidate.score, 'proposed']
         );
       }
 
-      // 2. AUTOMATION: Select the best candidate (first one from order) and assign
-      const bestCandidate = candidates[0];
+      // 2. AUTOMATION: Sort in-memory candidates descending by composite score, then select index [0]
+      candidatesWithScores.sort((a, b) => b.score - a.score);
+      const bestCandidate = candidatesWithScores[0];
 
       console.log(`🤖 [MatchWorker] Automatically assigning provider ${bestCandidate.name} (${bestCandidate.id}) to job ${job.id}`);
 
