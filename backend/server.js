@@ -278,6 +278,24 @@ app.get('/@dm1n', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
+
+// PWA Support Routes
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, '../manifest.json'));
+});
+
+app.get('/service-worker.js', (req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, '../service-worker.js'));
+});
+
+app.get('/icon-192.png', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icon-192.png'));
+});
+
+app.get('/icon-512.png', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icon-512.png'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
