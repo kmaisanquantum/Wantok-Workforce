@@ -1,0 +1,4 @@
+- Fixed critical frontend rendering crash by implementing defensive programming patterns for array lengths and object properties in `WantokWorkforce.js`.
+- Identified and corrected JSX syntax errors caused by improper regex replacements and unescaped characters in `alert()` calls.
+- Ensured that React Native components are used for safety checks (though web-specific `div` was kept as per user request, it's wrapped in a check to prevent total blackout).
+- Confirmed that `npm run build` is the definitive verification tool for Catching JSX and Metro-specific bundling errors in this repository.

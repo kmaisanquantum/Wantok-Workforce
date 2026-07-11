@@ -1,0 +1,6 @@
+Review of backend/src/match/services/match_service.js:
+- Expanded search logic to query name, primary_skill, and location_name.
+- Added support for numeric price filtering (hourly_rate) using regex pattern matching in SQL.
+- Updated all three search implementations (textSearchWorkers, Redis filter, PostGIS scan) for consistency.
+- Maintained support for mappedCategory (synonyms).
+- Verified SQL syntax for case-insensitive matching (ILIKE) and regex guards.

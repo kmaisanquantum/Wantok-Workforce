@@ -16,12 +16,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const jwt = require('jsonwebtoken');
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
-const passport = require('passport');
 
 const authRoutes = require('./src/auth/routes/auth_routes');
-const customerRoutes = require('./src/customers/routes/customer_routes');
 const matchRoutes = require('./src/match/routes/match_routes');
 const bookingRoutes = require('./src/match/routes/booking_routes');
 const adminRoutes = require('./src/admin/routes/admin_routes');
@@ -30,7 +26,6 @@ const messageRoutes = require('./src/match/routes/message_routes');
 const UserModel = require('./src/auth/models/user_model');
 const { initializeDatabase } = require('./db/db_init');
 const redisClient = require('./db/redis_init');
-const MatchWorker = require('./src/workers/match_worker');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'wantok-development-secret-2024';
 
@@ -55,34 +50,6 @@ try {
   // Dedicated subscriber for job_alerts
   const jobSubscriber = pubClient.duplicate();
   jobSubscriber.subscribe('job_alerts');
-
-  // Dedicated subscriber for match_assigned
-  const matchSubscriber = pubClient.duplicate();
-  matchSubscriber.subscribe('match_assigned');
-  matchSubscriber.subscribe('booking_updates');
-
-  matchSubscriber.on('message', (channel, message) => {
-    try {
-      const payload = JSON.parse(message);
-
-      if (channel === 'match_assigned') {
-        console.log(`📢 Match Assigned: Booking ${payload.bookingId} -> Provider ${payload.providerId}`);
-        // Scoped broadcast to private rooms
-        io.to(`user_${payload.customerId}`).emit('notification', payload);
-        io.to(`user_${payload.providerId}`).emit('notification', payload);
-        io.to(`user_${payload.customerId}`).emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
-        io.to(`user_${payload.providerId}`).emit('booking_status_update', { bookingId: payload.bookingId, status: 'accepted' });
-      } else if (channel === 'booking_updates') {
-        console.log(`📢 Booking Update: ${payload.bookingId} -> ${payload.status}`);
-        // Targeted delivery
-        if (payload.customerId) io.to(`user_${payload.customerId}`).emit('booking_status_update', payload);
-        if (payload.providerId) io.to(`user_${payload.providerId}`).emit('booking_status_update', payload);
-      }
-    } catch (e) {
-      console.error(`❌ Socket Sub Error (${channel}):`, e.message);
-    }
-  });
-
   jobSubscriber.on('message', (channel, message) => {
     if (channel === 'job_alerts') {
       try {
@@ -128,20 +95,6 @@ io.use(async (socket, next) => {
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id, 'User:', socket.user?.email);
 
-  // SECURE: Force authenticated user into their own private room on connect
-  if (socket.user?.id) {
-    socket.join(`user_${socket.user.id}`);
-    console.log(`👤 Socket ${socket.id} auto-joined secure room: user_${socket.user.id}`);
-  }
-
-  socket.on('join_user_room', () => {
-    // SECURITY: Ignore client-provided userId, always use verified socket.user.id
-    if (socket.user?.id) {
-      socket.join(`user_${socket.user.id}`);
-      console.log(`👤 Socket ${socket.id} joined secure room: user_${socket.user.id}`);
-    }
-  });
-
   socket.on('join_trade_room', (trade) => {
     if (trade) {
       socket.join(trade);
@@ -161,24 +114,18 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   origin: function (origin, callback) {
-    const envOrigins = process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : [];
-    const oauthCallbackBase = process.env.OAUTH_CALLBACK_BASE_URL;
-
     const allowedOrigins = [
         "http://wantok.dspng.tech",
         "https://wantok.dspng.tech",
+        "https://wantok-workforce.onrender.com",
         "http://localhost:3000",
         "http://localhost:19006",
-        "http://localhost:8081",
-        ...envOrigins
+        "http://localhost:8081"
     ];
-
-    if (oauthCallbackBase) {
-      allowedOrigins.push(oauthCallbackBase);
-    }
 
     const isAllowed = !origin ||
                      allowedOrigins.indexOf(origin) !== -1 ||
+                     origin.endsWith(".onrender.com") ||
                      origin.endsWith(".dspng.tech");
 
     if (isAllowed) {
@@ -199,36 +146,8 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
-// Session and Passport Middleware
-const SESSION_SECRET = process.env.SESSION_SECRET || 'wantok-session-secret-2024';
-const sessionConfig = {
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  }
-};
-
-if (redisClient) {
-  sessionConfig.store = new RedisStore({ client: redisClient });
-} else {
-  console.warn('⚠️ No Redis client available for session store. Using memory store.');
-}
-
-app.use(session(sessionConfig));
-app.use(passport.initialize());
-app.use(passport.session());
-require('./src/auth/passport_config');
-
-app.set('io', io); // Inject for controller-level emission fallback
-
 // Domain API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/customer/profile', customerRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
@@ -257,28 +176,6 @@ app.get('/api/health/db', async (req, res) => {
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// PWA Support endpoints
-app.get('/manifest.json', (req, res) => {
-  res.sendFile(path.join(__dirname, '../manifest.json'));
-});
-
-app.get('/service-worker.js', (req, res) => {
-  res.sendFile(path.join(__dirname, '../service-worker.js'));
-});
-
-app.get('/icon-192.jpg', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-192.jpg'));
-});
-
-app.get('/icon-512.jpg', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-512.jpg'));
-});
-
-app.get('/@dm1n', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
-});
-
-
 // PWA Support Routes
 app.get('/manifest.json', (req, res) => {
   res.sendFile(path.join(__dirname, '../manifest.json'));
@@ -289,13 +186,21 @@ app.get('/service-worker.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../service-worker.js'));
 });
 
+// PWA Icons
+app.use('/icons', express.static(path.join(__dirname, '../icons')));
+
 app.get('/icon-192.png', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-192.png'));
+  res.sendFile(path.join(__dirname, '../icons/icon-192.png'));
 });
 
 app.get('/icon-512.png', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-512.png'));
+  res.sendFile(path.join(__dirname, '../icons/icon-512.png'));
 });
+
+app.get('/@dm1n', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
@@ -312,24 +217,7 @@ httpServer.listen(PORT, '0.0.0.0', async () => {
     const pool = UserModel.getPool();
     if (pool) {
       await initializeDatabase(pool);
-      const fs = require("fs");
-      const path = require("path");
-      const patchPath = path.join(__dirname, "db", "patch_customer_ecommerce_profile.sql");
-      if (fs.existsSync(patchPath)) {
-        const patchSql = fs.readFileSync(patchPath, "utf8");
-        await pool.query(patchSql);
-        console.log("✅ E-commerce profile patch applied.");
-      }
-      const patchPath2 = path.join(__dirname, "db", "patch_provider_profiles_final.sql");
-      if (fs.existsSync(patchPath2)) {
-        const patchSql2 = fs.readFileSync(patchPath2, "utf8");
-        await pool.query(patchSql2);
-        console.log("✅ Provider profile final schema applied.");
-      }
       console.log('✅ Backend is ready and database is synced.');
-      const worker = new MatchWorker(io);
-      worker.start();
-      console.log('🤖 Background MatchWorker started.');
     } else {
       console.warn('⚠️ Database pool not initialized. Migration bypassed.');
     }

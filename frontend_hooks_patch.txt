@@ -1,0 +1,72 @@
+<<<<<<< SEARCH
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/dashboard-metrics`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        // Map backend completedMatches to frontend totalMatches state property
+        setStats({
+          totalCustomers: data.data.totalCustomers || 0,
+          totalProviders: data.data.totalProviders || 0,
+          totalMatches: data.data.completedMatches || 0
+        });
+      }
+    } catch (e) {
+      console.error("❌ Admin Data Pipeline Error (Stats): ", e.message);
+    }
+  };
+=======
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/dashboard-metrics`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.data) {
+        setStats({
+          totalCustomers: data.data.totalCustomers ?? 0,
+          totalProviders: data.data.totalProviders ?? 0,
+          totalMatches: data.data.totalMatches ?? 0
+        });
+      } else {
+        console.error("❌ Admin Stats Mismatch:", data);
+      }
+    } catch (e) {
+      console.error("❌ Admin Data Pipeline Error (Stats): ", e.message);
+    }
+  };
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/system-logs`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setLogs(data.data || data.logs || data);
+      }
+    } catch (e) {
+      console.error("❌ Admin Data Pipeline Error (Logs): ", e.message);
+    }
+  };
+=======
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/system-logs`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && Array.isArray(data.data)) {
+        setLogs(data.data);
+      } else {
+        console.error("❌ Admin Logs Mismatch:", data);
+        setLogs([]);
+      }
+    } catch (e) {
+      console.error("❌ Admin Data Pipeline Error (Logs): ", e.message);
+    }
+  };
+>>>>>>> REPLACE

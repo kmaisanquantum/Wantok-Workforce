@@ -1,0 +1,67 @@
+<<<<<<< SEARCH
+  const fetchPending = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/pending-providers`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchPending = async () => {
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/pending-providers`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/users?role=${encodeURIComponent(roleFilter)}`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/users?role=${encodeURIComponent(roleFilter)}`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const fetchQueue = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/queue`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchQueue = async () => {
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/queue`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchSettings = async () => {
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/settings`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const handleUserAction = async (userId, action, data = {}) => {
+    try {
+      const token = user?.token;
+=======
+  const handleUserAction = async (userId, action, data = {}) => {
+    try {
+      const adminToken = user?.token;
+>>>>>>> REPLACE
