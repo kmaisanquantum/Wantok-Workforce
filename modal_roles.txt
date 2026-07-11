@@ -1,0 +1,20 @@
+              <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 6 }}>SYSTEM ROLE</Text>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                {['customer', 'provider', 'admin'].map(r => (
+                  <TouchableOpacity
+                    key={r}
+                    onPress={() => setEditingUser({...editingUser, role: r})}
+                    style={{
+                      flex: 1,
+                      padding: 10,
+                      borderRadius: 8,
+                      backgroundColor: editingUser?.role === r ? COLORS.primary : "#F1F5F9",
+                      alignItems: "center"
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: editingUser?.role === r ? "#fff" : "#64748B" }}>
+                      {r.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>

@@ -1,0 +1,28 @@
+<<<<<<< SEARCH
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/dashboard-metrics`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchStats = async () => {
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/dashboard-metrics`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/system-logs`, {
+        headers: { "Authorization": `Bearer ${user?.token}` }
+      });
+=======
+  const fetchLogs = async () => {
+    try {
+      const adminToken = user?.token;
+      const res = await fetch(`${API_BASE}/admin/system-logs`, {
+        headers: { "Authorization": `Bearer ${adminToken}` }
+      });
+>>>>>>> REPLACE

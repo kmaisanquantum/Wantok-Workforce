@@ -1,0 +1,12 @@
+I have updated the search filtering logic in `WantokWorkforce.js` to exclude users with the "General Trade" category from customer search results.
+
+Changes:
+1. Added `const isNotGeneralTrade = (worker.category || '').toLowerCase() !== 'general trade';` to the three search filtering loops:
+   - `activeProvidersOnly` (empty search)
+   - `strictShortResults` (search length < 3)
+   - `fuzzyResults` (deep fuzzy search)
+2. Updated the return statements to ensure both `isNotAdmin` and `isNotGeneralTrade` are true.
+3. Removed the `isNotMockProvider` check to strictly follow the requested condition structure.
+4. Verified that the application builds successfully with `npm run build`.
+
+Please review the implementation for correctness and adherence to the user's specific syntax requirements.
