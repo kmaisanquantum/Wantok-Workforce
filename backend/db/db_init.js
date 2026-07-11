@@ -51,6 +51,13 @@ async function initializeDatabase(pool) {
       await runPatch("patch_booking_workflow.sql", "booking workflow financial counters");
       await runPatch("patch_messages.sql", "messages table patch");
       await runPatch("patch_message_attachments.sql", "message attachments patch");
+      await runPatch("patch_match_review_logs.sql", "match review logs patch");
+      await runPatch("patch_booking_moderation_fields.sql", "booking moderation fields patch");
+      await runPatch("patch_trust_verification_fields.sql", "trust verification fields patch");
+      await runPatch("patch_reconcile_schema.sql", "reconcile schema patch");
+      await runPatch("patch_booking_status_constraint.sql", "booking status constraint patch");
+      await runPatch("patch_oauth.sql", "oauth identity support");
+      await runPatch("patch_fee_percentage.sql", "global fee percentage patch");
 
       console.log("✅ [Ready] Database initialization complete.");
     } finally {
