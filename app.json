@@ -30,7 +30,13 @@
     },
     "web": {
       "favicon": "assets/brand_logo.jpg",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "Wantok Workforce",
+      "shortName": "Wantok",
+      "description": "Connecting skilled Wantoks with those who need them.",
+      "themeColor": "#1A6B3C",
+      "display": "standalone",
+      "backgroundColor": "#F0F4F0"
     },
     "extra": {
       "eas": {
