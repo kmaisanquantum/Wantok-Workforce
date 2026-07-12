@@ -138,6 +138,60 @@ class UserModel {
     const { rows } = await pool.query(query, [primary_skill, location_name, userId]);
     return rows[0];
   }
+
+  static async findOrCreateOAuthUser({ email, name, provider, role }) {
+    const cleanEmail = String(email).toLowerCase().trim();
+    const userRole = role || 'customer';
+    let client;
+    try {
+      client = await pool.connect();
+      await client.query('BEGIN');
+
+      const existQuery = `
+        SELECT u.*,
+               ARRAY(
+                 SELECT DISTINCT role_name FROM (
+                   SELECT role::TEXT as role_name FROM users WHERE id = u.id
+                   UNION
+                   SELECT role_name::TEXT FROM user_roles WHERE user_id = u.id
+                 ) sub
+                 WHERE role_name IS NOT NULL AND role_name::TEXT NOT IN ('null', 'undefined', '')
+               ) as roles
+        FROM users u
+        WHERE u.email = $1
+      `;
+      const { rows: existRows } = await client.query(existQuery, [cleanEmail]);
+
+      if (existRows.length > 0) {
+        const user = existRows[0];
+        if (!user.oauth_provider) {
+          await client.query('UPDATE users SET oauth_provider = $1 WHERE id = $2', [provider, user.id]);
+          user.oauth_provider = provider;
+        }
+        await client.query('COMMIT');
+        return user;
+      }
+
+      const userQuery = `
+        INSERT INTO users (name, email, password_hash, phone_number, role, active_persona, oauth_provider)
+        VALUES ($1, $2, NULL, NULL, $3, $4, $5)
+        RETURNING id, name, email, phone_number, role, active_persona, is_available, oauth_provider
+      `;
+      const { rows: createRows } = await client.query(userQuery, [name, cleanEmail, userRole, userRole, provider]);
+      const newUser = createRows[0];
+
+      await client.query('INSERT INTO user_roles (user_id, role_name) VALUES ($1, $2) ON CONFLICT DO NOTHING', [newUser.id, userRole]);
+      newUser.roles = [userRole];
+
+      await client.query('COMMIT');
+      return newUser;
+    } catch (e) {
+      if (client) await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      if (client) client.release();
+    }
+  }
 }
 
 module.exports = UserModel;

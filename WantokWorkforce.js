@@ -1173,6 +1173,14 @@ function ProviderOnboardingScreen({ onComplete, user, showAlert }) {
 }
 
 function AuthScreen({ onAuth, showAlert }) {
+  const handleOAuth = (provider) => {
+    if (Platform.OS === 'web') {
+      window.location.href = `${API_BASE}/auth/${provider}?role=customer`;
+    } else {
+      showAlert("OAuth is only supported on the Web platform currently.");
+    }
+  };
+
   const [loading, setLoading] = useState(false);
   const [dbStatus, setDbStatus] = useState("checking");
 
@@ -1516,6 +1524,71 @@ function AuthScreen({ onAuth, showAlert }) {
               )}
             </>
           )}
+
+
+          <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 16 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+            <Text style={{ marginHorizontal: 10, fontSize: 12, color: COLORS.textMuted, fontWeight: "600" }}>OR</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => handleOAuth("google")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              paddingVertical: 12,
+              borderRadius: 12,
+              marginBottom: 10,
+              backgroundColor: "#fff",
+              width: "100%"
+            }}
+          >
+            <Text style={{ fontSize: 16, marginRight: 8 }}>🌐</Text>
+            <Text style={{ color: COLORS.text, fontWeight: "700", fontSize: 14 }}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => handleOAuth("microsoft")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              paddingVertical: 12,
+              borderRadius: 12,
+              marginBottom: 10,
+              backgroundColor: "#fff",
+              width: "100%"
+            }}
+          >
+            <Text style={{ fontSize: 16, marginRight: 8 }}>💻</Text>
+            <Text style={{ color: COLORS.text, fontWeight: "700", fontSize: 14 }}>Continue with Outlook</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => handleOAuth("oidc")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              paddingVertical: 12,
+              borderRadius: 12,
+              marginBottom: 16,
+              backgroundColor: "#fff",
+              width: "100%"
+            }}
+          >
+            <Text style={{ fontSize: 16, marginRight: 8 }}>🔑</Text>
+            <Text style={{ color: COLORS.text, fontWeight: "700", fontSize: 14 }}>Continue with another account (OIDC)</Text>
+          </TouchableOpacity>
+
 
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
             <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>
@@ -1921,13 +1994,20 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
 function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
   const persona = user?.active_persona || currentUser || 'customer';
   const isCustomer = persona === 'customer';
+  const isProvider = persona === 'provider';
 
-  // Customer Edit Form states
+  // General Edit Form states
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || user?.phone || "");
-  const [whatsappNumber, setWhatsAppNumber] = useState(user?.whatsapp_number || "");
-  const [physicalAddress, setPhysicalAddress] = useState(user?.physical_address || "");
+  const [physicalAddress, setPhysicalAddress] = useState(user?.location_name || user?.physical_address || "");
+
+  // Provider Trade Profile states
+  const [primarySkill, setPrimarySkill] = useState(user?.primary_skill || "General Trade");
+  const [skillsSpecialization, setSkillsSpecialization] = useState(user?.skills_specialization || "");
+  const [yearsExperience, setYearsExperience] = useState(user?.years_experience ? String(user.years_experience) : "0");
+  const [hourlyRate, setHourlyRate] = useState(user?.hourly_rate ? String(user.hourly_rate) : "0");
+  const [operatingLocation, setOperatingLocation] = useState(user?.operating_location || user?.location_name || "");
 
   // Saved locations state
   const [savedLocations, setSavedLocations] = useState(user?.saved_locations || []);
@@ -1939,10 +2019,10 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
   const [newLocLat, setNewLocLat] = useState("");
   const [newLocLng, setNewLocLng] = useState("");
 
-  // Transaction settings preferences state
-  const [smsAlerts, setSmsAlerts] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const isOAuthUser = !!user?.oauth_provider;
+  const isVerified = !!user?.is_verified;
 
   const handleAddLocation = () => {
     if (!newLocName || !newLocAddr || !newLocLat || !newLocLng) {
@@ -1976,46 +2056,82 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
     setSavedLocations(savedLocations.filter(loc => loc.id !== id));
   };
 
-  const handleSaveChanges = async () => {
+  const handleEditProfile = async () => {
     setIsSaving(true);
-    const payload = {
-      name,
-      email,
-      phone_number: phoneNumber,
-      whatsapp_number: whatsappNumber,
-      physical_address: physicalAddress,
-      saved_locations: savedLocations,
-      preferences: { smsAlerts, emailAlerts }
-    };
-
     try {
-      const response = await fetch(`${API_BASE}/api/customer/profile/update`, {
-        method: "PUT",
+      // 1. Update basic / customer fields via PATCH /api/auth/profile
+      const basicRes = await fetch(API_BASE + "/auth/profile", {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`
+          "Authorization": "Bearer " + user?.token
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          name,
+          phone: phoneNumber,
+          location_name: physicalAddress
+        })
       });
-      const data = await response.json().catch(() => ({}));
-      if (response.ok) {
-        showAlert("Profile saved successfully!");
-        if (onUpdateUser) {
-          onUpdateUser({
-            ...user,
-            name,
-            email,
-            phone_number: phoneNumber,
-            whatsapp_number: whatsappNumber,
-            physical_address: physicalAddress,
-            saved_locations: savedLocations
-          });
-        }
-      } else {
-        showAlert(data.error || "Failed to update profile.");
+      const basicData = await basicRes.json().catch(() => ({}));
+
+      if (!basicRes.ok) {
+        showAlert(basicData.error || "Failed to update basic profile details.");
+        setIsSaving(false);
+        return;
       }
-    } catch (error) {
-      showAlert("Network error saving profile changes.");
+
+      let updatedUser = {
+        ...user,
+        ...basicData.user,
+        name,
+        phone_number: phoneNumber,
+        phone: phoneNumber,
+        location_name: physicalAddress,
+        saved_locations: savedLocations
+      };
+
+      // 2. If provider, also update provider detailed profile fields via PUT /v1/providers/profile
+      if (isProvider) {
+        const provRes = await fetch(API_BASE + "/v1/providers/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + user?.token
+          },
+          body: JSON.stringify({
+            primary_skill: primarySkill,
+            skills_specialization: skillsSpecialization,
+            years_experience: parseInt(yearsExperience) || 0,
+            hourly_rate: parseFloat(hourlyRate) || 0,
+            operating_location: operatingLocation
+          })
+        });
+        const provData = await provRes.json().catch(() => ({}));
+
+        if (!provRes.ok) {
+          showAlert(provData.error || "Failed to update trade profile details.");
+          setIsSaving(false);
+          return;
+        }
+
+        updatedUser = {
+          ...updatedUser,
+          primary_skill: primarySkill,
+          skills_specialization: skillsSpecialization,
+          years_experience: parseInt(yearsExperience) || 0,
+          hourly_rate: parseFloat(hourlyRate) || 0,
+          operating_location: operatingLocation,
+          location_name: operatingLocation
+        };
+      }
+
+      showAlert("Profile updated successfully!");
+      if (onUpdateUser) {
+        onUpdateUser(updatedUser);
+      }
+    } catch (err) {
+      console.error("❌ Edit Profile Error:", err);
+      showAlert("Network error updating profile.");
     } finally {
       setIsSaving(false);
     }
@@ -2037,54 +2153,126 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
              </View>
           </View>
 
-          {isCustomer ? (
-            <View style={{ gap: 16, width: "100%" }}>
-              {/* Historical Metrics Section */}
-              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, elevation: 2, width: "100%" }}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>📈 Profile Overview</Text>
-                <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
-                  <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
-                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{user?.completed_bookings || 0}</Text>
-                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Bookings</Text>
-                  </View>
+          <View style={{ gap: 16, width: "100%" }}>
+            {/* Historical Metrics Section */}
+            <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, elevation: 2, width: "100%" }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>📈 Profile Overview</Text>
+              <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                  <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{user?.completed_bookings || 0}</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Bookings</Text>
+                </View>
+                {isCustomer ? (
                   <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
                     <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{savedLocations?.length || 0}</Text>
                     <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Saved Places</Text>
                   </View>
+                ) : (
                   <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
-                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>99%</Text>
-                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Trust Score</Text>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{yearsExperience} yrs</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Experience</Text>
                   </View>
+                )}
+                <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                  <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>99%</Text>
+                  <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Trust Score</Text>
                 </View>
               </View>
+            </View>
 
-              {/* Account Specifics Form */}
+            {/* Basic Info Form (Common to Customer and Provider) */}
+            <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>👤 Account Particulars</Text>
+
+              <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Full Name</Text>
+              <TextInput value={name} onChangeText={setName} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }} />
+
+              <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Email Address</Text>
+              <TextInput value={email} editable={!isOAuthUser} onChangeText={setEmail} style={{ backgroundColor: isOAuthUser ? "#F1F5F9" : COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: isOAuthUser ? COLORS.textMuted : COLORS.text, keyboardType: "email-address" }} />
+              {isOAuthUser && <Text style={{ fontSize: 10, color: COLORS.textMuted, marginTop: -8, marginBottom: 12 }}>Email address cannot be changed for OAuth accounts.</Text>}
+
+              <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Phone Number</Text>
+              <TextInput value={phoneNumber} onChangeText={setPhoneNumber} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }} />
+
+              <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Location / Address</Text>
+              <TextInput value={physicalAddress} onChangeText={setPhysicalAddress} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }} />
+            </View>
+
+            {/* Provider Detailed Trade Info Form */}
+            {isProvider && (
               <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>👤 Account Particulars</Text>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>🔧 Trade Specifications</Text>
 
-                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Full Name</Text>
-                <TextInput value={name} onChangeText={setName} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 8 }}>Primary Trade Category</Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                  {categories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.key}
+                      onPress={() => setPrimarySkill(cat.label)}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        borderWidth: 1,
+                        borderColor: COLORS.border,
+                        backgroundColor: primarySkill === cat.label ? COLORS.primary : '#fff',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: primarySkill === cat.label ? '#fff' : COLORS.text }}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Email Address</Text>
-                <TextInput value={email} onChangeText={setEmail} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text, keyboardType: "email-address" }} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Skills & Specializations</Text>
+                <TextInput
+                  placeholder="e.g. House wiring, AC repairs, emergency plumbing"
+                  value={skillsSpecialization}
+                  onChangeText={setSkillsSpecialization}
+                  style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }}
+                />
 
-                <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 12, marginBottom: 12, width: "100%" }}>
+                <View style={{ flexDirection: "row", gap: 12, marginBottom: 12, width: "100%" }}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Phone Number</Text>
-                    <TextInput value={phoneNumber} onChangeText={setPhoneNumber} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }} />
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Years of Experience</Text>
+                    <TextInput
+                      value={yearsExperience}
+                      onChangeText={setYearsExperience}
+                      keyboardType="numeric"
+                      style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>WhatsApp Number</Text>
-                    <TextInput value={whatsappNumber} onChangeText={setWhatsAppNumber} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }} />
-                    <Text style={{ fontSize: 10, color: COLORS.textMuted, marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Hourly Rate (PGK Kina)</Text>
+                    <TextInput
+                      value={hourlyRate}
+                      onChangeText={setHourlyRate}
+                      keyboardType="numeric"
+                      style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }}
+                    />
                   </View>
                 </View>
 
-                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Physical Address</Text>
-                <TextInput value={physicalAddress} onChangeText={setPhysicalAddress} multiline style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text, minHeight: 60 }} />
-              </View>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Operating Location / Province</Text>
+                <TextInput
+                  value={operatingLocation}
+                  onChangeText={setOperatingLocation}
+                  style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }}
+                />
 
-              {/* Saved Locations Directory */}
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Verification Status</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: COLORS.bg, padding: 12, borderRadius: 10 }}>
+                  <Text style={{ fontSize: 20, marginRight: 8 }}>{isVerified ? "✅" : "⏳"}</Text>
+                  <Text style={{ fontWeight: "700", color: isVerified ? COLORS.primary : COLORS.textMuted }}>
+                    {isVerified ? "Verified Wantok Professional" : "Verification Pending / Non-Verified"}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Saved Locations Directory (Only for Customers) */}
+            {isCustomer && (
               <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text }}>📍 Saved Locations Directory</Text>
@@ -2110,32 +2298,13 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
                   ))
                 )}
               </View>
+            )}
 
-              {/* Transaction Settings & Preferences */}
-              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>⚙️ Notification Settings</Text>
-
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <Text style={{ fontSize: 14, color: COLORS.text, fontWeight: "500" }}>SMS Order Notifications</Text>
-                  <TouchableOpacity onPress={() => setSmsAlerts(!smsAlerts)} style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: smsAlerts ? COLORS.primary : "#E5E7EB", padding: 2, justifyContent: "center" }}>
-                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", transform: [{ translateX: smsAlerts ? 20 : 0 }] }} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text style={{ fontSize: 14, color: COLORS.text, fontWeight: "500" }}>Email Status Alerts</Text>
-                  <TouchableOpacity onPress={() => setEmailAlerts(!emailAlerts)} style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: emailAlerts ? COLORS.primary : "#E5E7EB", padding: 2, justifyContent: "center" }}>
-                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", transform: [{ translateX: emailAlerts ? 20 : 0 }] }} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Save Changes Button */}
-              <TouchableOpacity onPress={handleSaveChanges} disabled={isSaving} style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, elevation: 2, width: "100%" }}>
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{isSaving ? "SAVING CHANGES..." : "SAVE PROFILE CHANGES"}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
+            {/* Save Changes Button */}
+            <TouchableOpacity onPress={handleEditProfile} disabled={isSaving} style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, elevation: 2, width: "100%" }}>
+              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{isSaving ? "SAVING CHANGES..." : "SAVE PROFILE CHANGES"}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Core Actions (Logout, Admin) */}
           <View style={{ paddingVertical: 12, width: "100%" }}>
@@ -2190,7 +2359,6 @@ function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, 
     </View>
   );
 }
-
 function AdminScreen({ onNavigate, onLogout, user, showAlert }) {
   const { width: screenWidth } = Dimensions.get("window");
   const isDesktop = screenWidth > 1024;
@@ -3214,6 +3382,41 @@ export default function App() {
       const path = window.location.pathname;
       if (path === "/@dm1n") {
         setScreen("admin-auth");
+      }
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get("token");
+      const authError = searchParams.get("authError");
+
+      if (token) {
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          const decoded = JSON.parse(jsonPayload);
+
+          const oauthUser = {
+            id: decoded.id,
+            name: decoded.name || decoded.email?.split('@')[0] || "OAuth User",
+            email: decoded.email,
+            token: token,
+            active_persona: decoded.role || "customer",
+            roles: decoded.roles || [decoded.role || "customer"],
+            oauth_provider: decoded.provider || "oauth"
+          };
+
+          handleAuth(oauthUser, false);
+          window.history.replaceState({}, "", "/");
+        } catch (err) {
+          console.error("OAuth token parsing error:", err);
+          showAlert("OAuth login failed due to invalid session payload.");
+          window.history.replaceState({}, "", "/");
+        }
+      } else if (authError) {
+        showAlert("Authentication error: " + authError);
+        window.history.replaceState({}, "", "/");
       }
 
       try {

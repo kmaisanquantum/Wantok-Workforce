@@ -171,21 +171,60 @@ class AuthController {
   static async updateProfile(req, res) {
     try {
       const userId = req.user.id;
-      const { primary_skill, location_name } = req.body;
+      const { name, phone, phone_number, location, location_name, primary_skill } = req.body;
 
-      if (!primary_skill || !location_name) {
-        return res.status(400).json({ error: 'Missing skill or location' });
+      const targetPhone = phone_number || phone;
+      const targetLocation = location_name || location;
+
+      let cleanPhone = null;
+      if (targetPhone) {
+        // Clean and format to standard E.164
+        cleanPhone = targetPhone.replace(/[^\d+]/g, '');
+        if (cleanPhone && !cleanPhone.startsWith('+')) {
+          cleanPhone = '+' + cleanPhone;
+        }
       }
 
-      console.log(`📝 Updating trade profile for user ${userId}`);
-      const updated = await UserModel.updateTradeProfile(userId, { primary_skill, location_name });
+      console.log(`📝 Updating user profile for user ${userId}:`, { name, cleanPhone, targetLocation, primary_skill });
+
+      const pool = UserModel.getPool();
+
+      const query = `
+        UPDATE users
+        SET name = COALESCE($1, name),
+            phone_number = COALESCE($2, phone_number),
+            location_name = COALESCE($3, location_name),
+            primary_skill = COALESCE($4, primary_skill),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING id, name, email, phone_number, location_name, role, active_persona, is_available, primary_skill, hourly_rate
+      `;
+      const { rows } = await pool.query(query, [
+        name || null,
+        cleanPhone,
+        targetLocation || null,
+        primary_skill || null,
+        userId
+      ]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const updatedUser = rows[0];
 
       return res.status(200).json({
         message: 'Profile updated successfully',
-        user: updated
+        user: {
+          ...updatedUser,
+          phone: updatedUser.phone_number
+        }
       });
     } catch (error) {
       console.error('❌ updateProfile Error:', error);
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Phone number already registered by another user' });
+      }
       return res.status(500).json({ error: 'Failed to update profile' });
     }
   }

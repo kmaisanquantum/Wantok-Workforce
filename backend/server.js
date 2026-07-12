@@ -144,6 +144,39 @@ app.use((req, res, next) => {
   console.log(`📡 [${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.headers.origin || "Same-Origin"}`);
   next();
 });
+
+// Session and Passport OAuth Configuration
+const session = require('express-session');
+const passport = require('passport');
+
+let sessionStore;
+if (process.env.REDIS_URL && redisClient) {
+  const { RedisStore } = require('connect-redis');
+  sessionStore = new RedisStore({
+    client: redisClient,
+    prefix: "wantok:session:"
+  });
+  console.log('✅ Redis Session Store initialized');
+}
+
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'wantok-session-fallback-secret-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Require Passport Configuration
+require('./src/auth/passport_config');
+
 app.use(express.json());
 
 // Domain API Routes
