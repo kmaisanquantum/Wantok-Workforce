@@ -1919,36 +1919,274 @@ function CreateBookingScreen({ worker, onNavigate, user, showAlert }) {
 }
 
 function ProfileScreen({ onNavigate, currentUser, onLogout, user, onUpdateUser, showAlert }) {
+  const persona = user?.active_persona || currentUser || 'customer';
+  const isCustomer = persona === 'customer';
+
+  // Customer Edit Form states
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone_number || user?.phone || "");
+  const [whatsappNumber, setWhatsAppNumber] = useState(user?.whatsapp_number || "");
+  const [physicalAddress, setPhysicalAddress] = useState(user?.physical_address || "");
+
+  // Saved locations state
+  const [savedLocations, setSavedLocations] = useState(user?.saved_locations || []);
+
+  // Modal State for adding saved locations
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newLocName, setNewLocName] = useState("");
+  const [newLocAddr, setNewLocAddr] = useState("");
+  const [newLocLat, setNewLocLat] = useState("");
+  const [newLocLng, setNewLocLng] = useState("");
+
+  // Transaction settings preferences state
+  const [smsAlerts, setSmsAlerts] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleAddLocation = () => {
+    if (!newLocName || !newLocAddr || !newLocLat || !newLocLng) {
+      showAlert("Please fill in all fields for the location.");
+      return;
+    }
+    const lat = parseFloat(newLocLat);
+    const lng = parseFloat(newLocLng);
+    if (isNaN(lat) || isNaN(lng)) {
+      showAlert("Latitude and Longitude must be valid numbers.");
+      return;
+    }
+
+    const newLoc = {
+      id: Date.now().toString(),
+      name: newLocName,
+      address: newLocAddr,
+      latitude: lat,
+      longitude: lng
+    };
+
+    setSavedLocations([...savedLocations, newLoc]);
+    setNewLocName("");
+    setNewLocAddr("");
+    setNewLocLat("");
+    setNewLocLng("");
+    setIsModalVisible(false);
+  };
+
+  const handleDeleteLocation = (id) => {
+    setSavedLocations(savedLocations.filter(loc => loc.id !== id));
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    const payload = {
+      name,
+      email,
+      phone_number: phoneNumber,
+      whatsapp_number: whatsappNumber,
+      physical_address: physicalAddress,
+      saved_locations: savedLocations,
+      preferences: { smsAlerts, emailAlerts }
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/api/customer/profile/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        showAlert("Profile saved successfully!");
+        if (onUpdateUser) {
+          onUpdateUser({
+            ...user,
+            name,
+            email,
+            phone_number: phoneNumber,
+            whatsapp_number: whatsappNumber,
+            physical_address: physicalAddress,
+            saved_locations: savedLocations
+          });
+        }
+      } else {
+        showAlert(data.error || "Failed to update profile.");
+      }
+    } catch (error) {
+      showAlert("Network error saving profile changes.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-
       <ScrollView contentContainerStyle={{ alignItems: "center" }}>
-        <View style={{ maxWidth: MAX_WIDTH, width: "100%", paddingHorizontal: CONTENT_PADDING }}>
-        <View style={{ padding: 24, alignItems: "center", backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
-           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-             <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800" }}>{user?.name?.charAt(0) || "U"}</Text>
-           </View>
-           <Text style={{ fontSize: 20, fontWeight: "800", color: COLORS.text }}>{user?.name}</Text>
-           <Text style={{ color: COLORS.textMuted }}>{user?.email}</Text>
-           <View style={{ backgroundColor: COLORS.primary + "15", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 8 }}>
-             <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>{currentUser?.toUpperCase()}</Text>
-           </View>
-        </View>
+        <View style={{ maxWidth: 800, width: "100%", paddingHorizontal: CONTENT_PADDING, paddingVertical: 24 }}>
+          {/* Main User Card */}
+          <View style={{ padding: 24, alignItems: "center", backgroundColor: "#fff", borderRadius: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border, elevation: 2, marginBottom: 16, width: "100%" }}>
+             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+               <Text style={{ color: "#fff", fontSize: 32, fontWeight: "800" }}>{name?.charAt(0) || "U"}</Text>
+             </View>
+             <Text style={{ fontSize: 20, fontWeight: "800", color: COLORS.text }}>{name}</Text>
+             <Text style={{ color: COLORS.textMuted }}>{email}</Text>
+             <View style={{ backgroundColor: COLORS.primary + "15", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 8 }}>
+               <Text style={{ color: COLORS.primary, fontWeight: "700", fontSize: 12 }}>{persona?.toUpperCase()}</Text>
+             </View>
+          </View>
 
-        <View style={{ padding: 20 }}>
-          <TouchableOpacity onPress={onLogout} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12, marginBottom: 12 }}>
-            <Text style={{ fontSize: 18, marginRight: 12 }}>🚪</Text>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.danger }}>Logout</Text>
-          </TouchableOpacity>
-          {user?.roles?.includes("admin") && (
-            <TouchableOpacity onPress={() => onNavigate("admin")} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12 }}>
-              <Text style={{ fontSize: 18, marginRight: 12 }}>🛠️</Text>
-              <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.text }}>Admin Dashboard</Text>
+          {isCustomer ? (
+            <View style={{ gap: 16, width: "100%" }}>
+              {/* Historical Metrics Section */}
+              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, elevation: 2, width: "100%" }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 12 }}>📈 Profile Overview</Text>
+                <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                  <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{user?.completed_bookings || 0}</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Bookings</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>{savedLocations?.length || 0}</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Saved Places</Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: COLORS.bg, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.primary }}>99%</Text>
+                    <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>Trust Score</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Account Specifics Form */}
+              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>👤 Account Particulars</Text>
+
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Full Name</Text>
+                <TextInput value={name} onChangeText={setName} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text }} />
+
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Email Address</Text>
+                <TextInput value={email} onChangeText={setEmail} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text, keyboardType: "email-address" }} />
+
+                <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 12, marginBottom: 12, width: "100%" }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Phone Number</Text>
+                    <TextInput value={phoneNumber} onChangeText={setPhoneNumber} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>WhatsApp Number</Text>
+                    <TextInput value={whatsappNumber} onChangeText={setWhatsAppNumber} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14, color: COLORS.text }} />
+                    <Text style={{ fontSize: 10, color: COLORS.textMuted, marginTop: 4 }}>For order/delivery status alerts via WhatsApp</Text>
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Physical Address</Text>
+                <TextInput value={physicalAddress} onChangeText={setPhysicalAddress} multiline style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14, color: COLORS.text, minHeight: 60 }} />
+              </View>
+
+              {/* Saved Locations Directory */}
+              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text }}>📍 Saved Locations Directory</Text>
+                  <TouchableOpacity onPress={() => setIsModalVisible(true)} style={{ backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>+ Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {savedLocations?.length === 0 ? (
+                  <Text style={{ color: COLORS.textMuted, fontSize: 13, fontStyle: "italic", textAlign: "center", paddingVertical: 12 }}>No saved delivery locations.</Text>
+                ) : (
+                  savedLocations?.map((loc) => (
+                    <View key={loc.id} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: COLORS.bg, padding: 12, borderRadius: 10, marginBottom: 8, width: "100%" }}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text style={{ fontWeight: "700", color: COLORS.text, fontSize: 14 }}>{loc.name}</Text>
+                        <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>{loc.address}</Text>
+                        <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: "600", marginTop: 2 }}>Coords: {loc.latitude?.toFixed(4)}, {loc.longitude?.toFixed(4)} (PostGIS Ready)</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleDeleteLocation(loc.id)} style={{ padding: 6 }}>
+                        <Text style={{ color: COLORS.danger, fontWeight: "700", fontSize: 14 }}>🗑️</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              {/* Transaction Settings & Preferences */}
+              <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, elevation: 2, width: "100%" }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 }}>⚙️ Notification Settings</Text>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 14, color: COLORS.text, fontWeight: "500" }}>SMS Order Notifications</Text>
+                  <TouchableOpacity onPress={() => setSmsAlerts(!smsAlerts)} style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: smsAlerts ? COLORS.primary : "#E5E7EB", padding: 2, justifyContent: "center" }}>
+                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", transform: [{ translateX: smsAlerts ? 20 : 0 }] }} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ fontSize: 14, color: COLORS.text, fontWeight: "500" }}>Email Status Alerts</Text>
+                  <TouchableOpacity onPress={() => setEmailAlerts(!emailAlerts)} style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: emailAlerts ? COLORS.primary : "#E5E7EB", padding: 2, justifyContent: "center" }}>
+                    <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", transform: [{ translateX: emailAlerts ? 20 : 0 }] }} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Save Changes Button */}
+              <TouchableOpacity onPress={handleSaveChanges} disabled={isSaving} style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 8, elevation: 2, width: "100%" }}>
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>{isSaving ? "SAVING CHANGES..." : "SAVE PROFILE CHANGES"}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Core Actions (Logout, Admin) */}
+          <View style={{ paddingVertical: 12, width: "100%" }}>
+            <TouchableOpacity onPress={onLogout} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12, marginBottom: 12, elevation: 1, width: "100%" }}>
+              <Text style={{ fontSize: 18, marginRight: 12 }}>🚪</Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.danger }}>Logout</Text>
             </TouchableOpacity>
-          )}
+            {user?.roles?.includes("admin") && (
+              <TouchableOpacity onPress={() => onNavigate("admin")} style={{ flexDirection: "row", alignItems: "center", padding: 16, backgroundColor: "#fff", borderRadius: 12, elevation: 1, width: "100%" }}>
+                <Text style={{ fontSize: 18, marginRight: 12 }}>🛠️</Text>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: COLORS.text }}>Admin Dashboard</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
+
+      {/* Modal for adding a Saved Location */}
+      <Modal visible={isModalVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 16 }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 450, elevation: 10 }}>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: COLORS.text, marginBottom: 16 }}>📍 Add Saved Location</Text>
+
+            <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Location Name (e.g. Home, Office)</Text>
+            <TextInput value={newLocName} onChangeText={setNewLocName} placeholder="Home" placeholderTextColor={COLORS.textLight} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14 }} />
+
+            <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Address</Text>
+            <TextInput value={newLocAddr} onChangeText={setNewLocAddr} placeholder="123 Hibiscus Street" placeholderTextColor={COLORS.textLight} style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14 }} />
+
+            <View style={{ flexDirection: "row", gap: 12, marginBottom: 20, width: "100%" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Latitude</Text>
+                <TextInput value={newLocLat} onChangeText={setNewLocLat} placeholder="-9.4434" placeholderTextColor={COLORS.textLight} keyboardType="numeric" style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14 }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: COLORS.text, marginBottom: 6 }}>Longitude</Text>
+                <TextInput value={newLocLng} onChangeText={setNewLocLng} placeholder="147.1824" placeholderTextColor={COLORS.textLight} keyboardType="numeric" style={{ backgroundColor: COLORS.bg, borderRadius: 10, padding: 12, fontSize: 14 }} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={{ flex: 1, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 14, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ color: COLORS.textMuted, fontWeight: "700" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleAddLocation} style={{ flex: 1, backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Add Location</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
