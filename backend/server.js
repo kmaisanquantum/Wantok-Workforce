@@ -60,6 +60,7 @@ try {
   const matchSubscriber = pubClient.duplicate();
   matchSubscriber.subscribe('match_assigned');
   matchSubscriber.subscribe('booking_updates');
+  matchSubscriber.subscribe('match_proposed');
 
   matchSubscriber.on('message', (channel, message) => {
     try {
@@ -77,6 +78,10 @@ try {
         // Targeted delivery
         if (payload.customerId) io.to(`user_${payload.customerId}`).emit('booking_status_update', payload);
         if (payload.providerId) io.to(`user_${payload.providerId}`).emit('booking_status_update', payload);
+      } else if (channel === 'match_proposed') {
+        console.log(`📢 Match Proposed: Booking ${payload.bookingId} -> Provider ${payload.providerId}`);
+        // Scoped delivery: only the proposed provider is notified of the offer.
+        io.to(`user_${payload.providerId}`).emit('match_proposed', payload);
       }
     } catch (e) {
       console.error(`❌ Socket Sub Error (${channel}):`, e.message);
