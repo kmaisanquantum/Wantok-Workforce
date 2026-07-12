@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/brand_logo.jpg",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1A6B3C"
       },
       "package": "com.wantok.workforce",
