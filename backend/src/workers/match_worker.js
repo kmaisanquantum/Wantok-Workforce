@@ -1,5 +1,6 @@
 const UserModel = require('../auth/models/user_model');
 const AdminController = require('../admin/controllers/admin_controller');
+const redisClient = require('../../db/redis_init');
 
 /**
  * MatchWorker
@@ -76,12 +77,23 @@ class MatchWorker {
 
       console.log(`🤖 [MatchWorker] Finding candidates for job ${job.id} (${job.service_type}) within ${radius}km`);
 
-      // PostGIS query to find available providers with matching skill
+      // PostGIS query to find available providers with matching skill.
+      // Also joins provider quality signals (community verification + avg feedback rating)
+      // so the worker can compute a composite, quality-weighted match score.
       const candidateQuery = `
         SELECT u.id,
-               CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km
+               CASE WHEN u.location_coords IS NOT NULL AND $1::FLOAT IS NOT NULL AND $2::FLOAT IS NOT NULL THEN ST_Distance(u.location_coords, ST_SetSRID(ST_MakePoint($1, $2), 4326)) / 1000 ELSE NULL END as distance_km,
+               COALESCE(pp.is_community_verified, FALSE) as is_community_verified,
+               fb.avg_rating as avg_rating
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN provider_profiles pp ON pp.user_id = u.id
+        LEFT JOIN (
+          SELECT provider_id, AVG(feedback_rating)::FLOAT as avg_rating
+          FROM bookings
+          WHERE feedback_rating IS NOT NULL
+          GROUP BY provider_id
+        ) fb ON fb.provider_id = u.id
         WHERE ur.role_name = 'provider'
           AND u.is_available = TRUE
           AND u.is_flagged = FALSE
@@ -101,13 +113,36 @@ class MatchWorker {
       console.log(`🤖 [MatchWorker] Found ${candidates.length} candidate(s) for job ${job.id}`);
 
       for (const candidate of candidates) {
-        // Simple scoring: 100 - distance_km (capped at 0)
-        const score = Math.max(0, 100 - candidate.distance_km);
+        // Composite, quality-weighted score (0-100):
+        //   60% proximity + 30% average rating + 10% verification bonus.
+        // This ranks a higher-rated / community-verified provider above a
+        // marginally-closer unrated one.
+        const proximityScore = Math.max(0, 100 - candidate.distance_km);
+        const avgRating = candidate.avg_rating != null ? parseFloat(candidate.avg_rating) : 0;
+        const ratingScore = Math.max(0, Math.min(100, avgRating * 20)); // 5-star rating -> 0-100
+        const verifiedBonus = candidate.is_community_verified ? 100 : 0;
+        const score = 0.6 * proximityScore + 0.3 * ratingScore + 0.1 * verifiedBonus;
 
         await pool.query(
           'INSERT INTO matches (booking_id, provider_id, score, status) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
           [job.id, candidate.id, score, 'proposed']
         );
+
+        // Propose-and-consent: notify the proposed provider in real time.
+        // Do NOT auto-assign — the booking stays 'pending' until a provider claims.
+        if (redisClient) {
+          try {
+            await redisClient.publish('match_proposed', JSON.stringify({
+              bookingId: job.id,
+              providerId: candidate.id,
+              customerId: job.customer_id,
+              serviceType: job.service_type,
+              score
+            }));
+          } catch (pubErr) {
+            console.error(`⚠️ [MatchWorker] Failed to publish match_proposed for job ${job.id} -> provider ${candidate.id}:`, pubErr.message);
+          }
+        }
       }
 
       console.log(`✅ [MatchWorker] Successfully proposed matches for job ${job.id}`);
