@@ -21,6 +21,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as LinkingExpo from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import categories from "./categories.json";
+import io from "socket.io-client";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -972,9 +973,30 @@ function TrustScreen({ onNavigate, showAlert, user }) {
 
 function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
   const [bookings, setBookings] = useState([]);
+  const [proposals, setProposals] = useState([]);
+
+  const fetchProposals = async () => {
+    if (currentUser !== 'provider') return;
+    try {
+      const res = await fetch(API_BASE + "/bookings/proposals", {
+        headers: { "Authorization": "Bearer " + user?.token }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.success && Array.isArray(data.proposals)) {
+        setProposals(data.proposals);
+      }
+    } catch (e) {
+      console.error("Fetch proposals failed", e);
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
-    const interval = setInterval(fetchBookings, 15000);
+    fetchProposals();
+    const interval = setInterval(() => {
+      fetchBookings();
+      fetchProposals();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
   const [loading, setLoading] = useState(false);
@@ -1002,6 +1024,33 @@ function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  const handleClaim = async (bookingId) => {
+    setLoading(true);
+    try {
+      const res = await fetch(API_BASE + "/bookings/" + bookingId + "/claim", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + user?.token }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        showAlert("Job claimed successfully!");
+        fetchBookings();
+        fetchProposals();
+      } else if (res.status === 409) {
+        showAlert("already taken");
+        fetchBookings();
+        fetchProposals();
+      } else {
+        showAlert(data.error || "Failed to claim job");
+      }
+    } catch (e) {
+      showAlert("Error claiming job: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleAction = async (bookingId, action) => {
     setLoading(true);
@@ -1035,6 +1084,31 @@ function BookingsScreen({ onNavigate, user, currentUser, showAlert }) {
         </LinearGradient>
 
         <View style={{ padding: SPACING.md, gap: SPACING.sm }}>
+          {currentUser === 'provider' && (
+            <View style={{ marginBottom: SPACING.md, width: "100%" }}>
+              <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: TYPOGRAPHY.h3.fontSize, color: COLORS.text, marginBottom: SPACING.sm }}>🎯 Job Offers / Proposals</Text>
+              {proposals?.length === 0 ? (
+                <View style={{ padding: SPACING.lg, alignItems: 'center', backgroundColor: COLORS.white, borderRadius: RADII.md, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed' }}>
+                  <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.textMuted }}>No matching proposals available right now.</Text>
+                </View>
+              ) : (
+                proposals?.map((p, idx) => (
+                  <View key={p.booking_id || idx} style={{ backgroundColor: COLORS.white, borderRadius: RADII.md, padding: SPACING.md, borderWidth: 1, borderColor: COLORS.primary, marginBottom: SPACING.sm, width: "100%" }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: SPACING.sm }}>
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: TYPOGRAPHY.body.fontSize, color: COLORS.text }}>{p.service_type}</Text>
+                      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.primary }}>K{p.price}</Text>
+                    </View>
+                    <View style={{ marginBottom: SPACING.sm }}>
+                      <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.textMuted }}>Client: {p.customer_name}</Text>
+                      <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.textMuted, marginTop: SPACING.xs / 2 }}>Location: {p.customer_location || "Port Moresby"}</Text>
+                      <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.primary, fontWeight: "700", marginTop: SPACING.xs / 2 }}>Match Quality: {p.score?.toFixed(1)}%</Text>
+                    </View>
+                    <ThemedButton onPress={() => handleClaim(p.booking_id)} title="Claim" style={{ backgroundColor: COLORS.primary }} />
+                  </View>
+                ))
+              )}
+            </View>
+          )}
           {(!bookings || bookings?.length === 0) ? (
             <View style={{ padding: SPACING.xl * 1.25, alignItems: 'center', backgroundColor: COLORS.white, borderRadius: RADII.md }}>
               <Text style={{ fontSize: TYPOGRAPHY.bodySmall.fontSize, color: COLORS.textMuted, textAlign: 'center' }}>No bookings found.</Text>
@@ -3696,6 +3770,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [screenData, setScreenData] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (screen === "admin-auth" && isAuthenticated && user?.roles?.includes('admin')) {
@@ -3704,6 +3779,53 @@ export default function App() {
       setOnboardingComplete(true);
     }
   }, [screen, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.token) {
+      const SOCKET_URL = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : (API_BASE === '/api' ? '/' : API_BASE);
+      console.log("🔌 Connecting real-time Socket.io stream to:", SOCKET_URL);
+
+      const socketCon = io(SOCKET_URL, {
+        auth: { token: user.token },
+        transports: ['websocket'],
+        forceNew: true
+      });
+
+      socketCon.on('connect', () => {
+        console.log('🔌 Connected to Socket.io secure backend');
+        socketCon.emit('join_user_room');
+      });
+
+      socketCon.on('match_proposed', (payload) => {
+        console.log('📢 Real-time match proposed:', payload);
+        showAlert(`🎯 New Job Offer proposed: ${payload.serviceType}! Match quality score: ${payload.score?.toFixed(1)}%`);
+        setNotifications(prev => [
+          { id: Date.now().toString(), text: `New job offer: ${payload.serviceType}`, type: 'proposal', data: payload },
+          ...prev
+        ]);
+      });
+
+      socketCon.on('notification', (payload) => {
+        console.log('📢 Real-time notification:', payload);
+        showAlert(`🎉 Notification: You have been assigned a job!`);
+        setNotifications(prev => [
+          { id: Date.now().toString(), text: `Job matched successfully!`, type: 'info', data: payload },
+          ...prev
+        ]);
+      });
+
+      socketCon.on('booking_status_update', (payload) => {
+        console.log('📢 Real-time booking status update:', payload);
+        showAlert(`📅 Booking Status Update: ${payload.status}`);
+      });
+
+      return () => {
+        console.log('🔌 Disconnecting socket');
+        socketCon.disconnect();
+      };
+    }
+  }, [isAuthenticated, user?.token]);
+
 
   useEffect(() => {
     if (Platform.OS === "web") {

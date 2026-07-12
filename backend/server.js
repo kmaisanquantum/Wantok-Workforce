@@ -266,12 +266,23 @@ app.get('/service-worker.js', (req, res) => {
   res.sendFile(path.join(__dirname, '../service-worker.js'));
 });
 
+// PWA Icons Static directory serving
+app.use('/icons', express.static(path.join(__dirname, '../icons')));
+
+app.get('/icon-192.png', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icons/icon-192.png'));
+});
+
+app.get('/icon-512.png', (req, res) => {
+  res.sendFile(path.join(__dirname, '../icons/icon-512.png'));
+});
+
 app.get('/icon-192.jpg', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-192.jpg'));
+  res.sendFile(path.join(__dirname, '../icons/icon-192.png'));
 });
 
 app.get('/icon-512.jpg', (req, res) => {
-  res.sendFile(path.join(__dirname, '../icon-512.jpg'));
+  res.sendFile(path.join(__dirname, '../icons/icon-512.png'));
 });
 
 app.get('/@dm1n', (req, res) => {
