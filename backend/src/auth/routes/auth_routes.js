@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const passport = require('passport');
-const JWT_SECRET = process.env.JWT_SECRET || 'wantok-development-secret-2024';
+const jwt = require('jsonwebtoken');
 const AuthController = require('../controllers/auth_controller');
 const { authMiddleware } = require('../middlewares/auth');
 const { loginLimiter } = require('../middlewares/rate_limit');
@@ -12,70 +11,72 @@ router.post('/register', maintenanceMiddleware, AuthController.register);
 router.post('/login', loginLimiter, AuthController.login);
 router.post('/admin-login', loginLimiter, AuthController.login);
 
+// OAuth Routes
+const providers = ['google', 'microsoft', 'oidc'];
+providers.forEach(provider => {
+  router.get(`/${provider}`, (req, res, next) => {
+    let { role, platform } = req.query;
+    if (!['customer', 'provider'].includes(role)) role = 'customer';
+    const state = Buffer.from(JSON.stringify({ role, platform: platform || 'web' })).toString('base64');
+    passport.authenticate(provider === 'oidc' ? 'oidc' : provider, {
+      scope: provider === 'google' ? ['profile', 'email'] : (provider === 'microsoft' ? ['user.read', 'openid', 'profile', 'email'] : ['openid', 'profile', 'email']),
+      state
+    })(req, res, next);
+  });
+
+  router.get(`/${provider}/callback`, (req, res, next) => {
+    passport.authenticate(provider === 'oidc' ? 'oidc' : provider, { failureRedirect: '/?authError=1' }, (err, user, info) => {
+      if (err || !user) {
+        return res.redirect('/?authError=1');
+      }
+
+      const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+      const JWT_SECRET = process.env.JWT_SECRET || 'wantok-development-secret-2024';
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+      if (user.isNew && state.role === 'provider') {
+        // Redirect to provider onboarding if new provider
+        if (state.platform === 'native') {
+           return res.redirect(`wantok://auth-callback?token=${token}&onboarding=1`);
+        } else {
+           return res.redirect(`/?token=${token}&onboarding=1`);
+        }
+      }
+
+      if (state.platform === 'native') {
+        return res.redirect(`wantok://auth-callback?token=${token}`);
+      } else {
+        return res.redirect(`/?token=${token}`);
+      }
+    })(req, res, next);
+  });
+});
+
 // Persona Management
 router.post('/select-role', authMiddleware, AuthController.selectRole);
 router.patch('/switch-persona', authMiddleware, AuthController.switchPersona);
 
 // Profile
+router.get('/me', authMiddleware, (req, res) => {
+  res.status(200).json({
+    success: true,
+    user: {
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      active_persona: req.user.active_persona,
+      roles: req.user.roles,
+      is_available: req.user.is_available,
+      avatar_url: req.user.avatar_url,
+      primary_skill: req.user.primary_skill,
+      location_name: req.user.location_name
+    }
+  });
+});
 router.patch('/profile', authMiddleware, AuthController.updateProfile);
-router.put('/profile', authMiddleware, AuthController.updateProfile);
 
 // Availability
 router.patch('/availability', authMiddleware, AuthController.toggleAvailability);
-
-
-// OAuth authentication endpoints
-router.get('/:provider', (req, res, next) => {
-  const { provider } = req.params;
-  if (!['google', 'microsoft', 'oidc'].includes(provider)) {
-    return res.status(404).json({ error: 'Provider not found' });
-  }
-
-  const role = req.query.role || 'customer';
-  const stateObj = { role };
-  const base64State = Buffer.from(JSON.stringify(stateObj)).toString('base64');
-
-  let scope = ['email', 'profile'];
-  if (provider === 'microsoft') {
-    scope = ['user.read'];
-  }
-
-  passport.authenticate(provider, {
-    state: base64State,
-    scope
-  })(req, res, next);
-});
-
-router.get('/:provider/callback', (req, res, next) => {
-  const { provider } = req.params;
-  if (!['google', 'microsoft', 'oidc'].includes(provider)) {
-    return res.status(404).json({ error: 'Provider not found' });
-  }
-
-  passport.authenticate(provider, { session: false }, (err, user, info) => {
-    const callbackBase = process.env.OAUTH_CALLBACK_BASE_URL || 'https://wantok.dspng.tech';
-
-    if (err || !user) {
-      console.error('❌ OAuth callback failed:', err, info);
-      const errMsg = err?.message || info?.message || 'Authentication failed';
-      return res.redirect(`${callbackBase}/?authError=${encodeURIComponent(errMsg)}`);
-    }
-
-    try {
-      const userPersona = user.active_persona || 'customer';
-      const token = jwt.sign(
-        { id: user.id, role: userPersona, email: user.email, name: user.name, roles: user.roles || [userPersona] },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-      console.log(`✅ OAuth successful, redirecting with token for user ${user.email}`);
-      return res.redirect(`${callbackBase}/?token=${token}`);
-    } catch (tokenErr) {
-      console.error('❌ Token signing/redirect error:', tokenErr);
-      return res.redirect(`${callbackBase}/?authError=TokenGenerationError`);
-    }
-  })(req, res, next);
-});
-
 
 module.exports = router;
