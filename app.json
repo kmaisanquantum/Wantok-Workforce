@@ -47,6 +47,7 @@
       "ios",
       "android",
       "web"
-    ]
+    ],
+    "scheme": "wantok"
   }
 }
