@@ -234,6 +234,28 @@ class AdminController {
     }
   }
 
+  // Reads a single system_settings value for internal (non-HTTP) callers such as
+  // the MatchWorker and middleware. Coerces the stored text to the type of
+  // defaultValue and falls back to defaultValue when missing or on error.
+  static async getInternalSetting(key, defaultValue) {
+    try {
+      const { rows } = await UserModel.getPool().query('SELECT value FROM system_settings WHERE key = $1', [key]);
+      if (rows.length === 0 || rows[0].value == null) return defaultValue;
+      const raw = rows[0].value;
+      if (typeof defaultValue === 'number') {
+        const n = parseFloat(raw);
+        return Number.isNaN(n) ? defaultValue : n;
+      }
+      if (typeof defaultValue === 'boolean') {
+        return raw === 'true' || raw === '1';
+      }
+      return raw;
+    } catch (error) {
+      console.error(`⚠️ [AdminController] getInternalSetting('${key}') failed:`, error.message);
+      return defaultValue;
+    }
+  }
+
   static async updateSettings(req, res) {
     try {
       const { settings } = req.body;
