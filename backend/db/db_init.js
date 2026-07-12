@@ -51,6 +51,7 @@ async function initializeDatabase(pool) {
       await runPatch("patch_booking_workflow.sql", "booking workflow financial counters");
       await runPatch("patch_messages.sql", "messages table patch");
       await runPatch("patch_message_attachments.sql", "message attachments patch");
+      await runPatch("patch_oauth_and_nullable.sql", "oauth and nullable fields patch");
 
       console.log("✅ [Ready] Database initialization complete.");
     } finally {
